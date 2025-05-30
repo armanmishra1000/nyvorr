@@ -3,6 +3,7 @@ import React from "react";
 import Products from "./components/Products";
 import Reviews from "./components/Reviews";
 import News from "./components/News";
+import Contact from "./components/Contact";
 import Footer from "./components/Footer"; // <-- Import Footer
 
 function App() {
@@ -41,6 +42,9 @@ function App() {
 
       {/* News Section */}
       <News />
+
+      {/* Contact Section */}
+      <Contact />
 
       {/* Footer */}
       <Footer />
