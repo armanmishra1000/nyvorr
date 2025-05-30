@@ -1,3 +1,4 @@
+// src/pages/ProductPage.jsx
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import products from "../data/products";
@@ -17,9 +18,9 @@ function ProductPage() {
   // Email validation regex
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  const handlePay = (e) => {
+  // Handle Pay Now (calls backend to get Cryptomus payment link)
+  const handlePay = async (e) => {
     e.preventDefault();
-    // Validate fields
     if (!email || !telegram) {
       setError("Please enter your email and Telegram username.");
       return;
@@ -29,8 +30,28 @@ function ProductPage() {
       return;
     }
     setError("");
-    // TODO: Integrate payment gateway here
-    alert("Payment process would start here (Cryptomus integration in next step).");
+    try {
+      const response = await fetch("http://localhost:4000/api/create-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: product.price.replace("$", ""),
+          currency: "USDT",
+          order_id: `nyvorr_${product.id}_${Date.now()}`,
+          email,
+          telegram,
+          product_name: product.name,
+        }),
+      });
+      const data = await response.json();
+      if (data.pay_url) {
+        window.location.href = data.pay_url; // Redirect to Cryptomus payment page
+      } else {
+        setError(data.error || "Failed to create payment link.");
+      }
+    } catch (err) {
+      setError("Failed to connect to payment server.");
+    }
   };
 
   if (!product) {
