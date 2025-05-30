@@ -12,12 +12,15 @@ function Products() {
             key={product.id}
             className="bg-[#181e20] border border-[#22282c] rounded-xl shadow-md p-4 flex flex-col items-center transition hover:scale-[1.03] hover:border-green-400"
           >
-            <img
-              src={product.image}
-              alt={product.name}
-              className="h-16 sm:h-20 mb-3 sm:mb-4 object-contain"
-              draggable={false}
-            />
+            {/* Image wrapper for perfect crop */}
+            <div className="w-24 h-24 mb-4 rounded-md overflow-hidden border border-[#232a32] bg-[#20272a] shadow-sm flex items-center justify-center">
+              <img
+                src={product.image}
+                alt={product.name}
+                className="w-full h-full object-contain"
+                draggable={false}
+              />
+            </div>
             <h3 className="font-semibold text-base sm:text-lg mb-1 text-center">{product.name}</h3>
             <div className="flex items-center justify-between w-full mb-2">
               <span className="text-green-400 font-bold">{product.price}</span>
