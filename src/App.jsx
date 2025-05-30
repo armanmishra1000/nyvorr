@@ -2,6 +2,8 @@
 import React from "react";
 import Products from "./components/Products";
 import Reviews from "./components/Reviews";
+import News from "./components/News";
+import Footer from "./components/Footer"; // <-- Import Footer
 
 function App() {
   return (
@@ -36,6 +38,12 @@ function App() {
 
       {/* Reviews Section */}
       <Reviews />
+
+      {/* News Section */}
+      <News />
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
