@@ -20,7 +20,7 @@ const products = [
     {
       id: 3,
       name: "Netflix MAX (100P+IP) - 1 Month",
-      price: "$0.20",
+      price: "$2.20",
       status: "In Stock",
       image: netflixImg,
     },
