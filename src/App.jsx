@@ -1,16 +1,16 @@
-// src/App.jsx
 import React from "react";
 import Products from "./components/Products";
 import Reviews from "./components/Reviews";
 import News from "./components/News";
 import Contact from "./components/Contact";
-import Footer from "./components/Footer"; // <-- Import Footer
+import Footer from "./components/Footer";
+import ScrollToTop from "./components/ScrollToTop"; // <-- New
 
 function App() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#151c1f] via-[#23272c] to-[#101314] text-white font-sans">
-      {/* Header/Navbar */}
-      <header className="w-full bg-[#161b1d] border-b border-[#22282c] px-4 py-3 flex items-center justify-between shadow-md">
+    <div className="min-h-screen pt-[70px] bg-gradient-to-br from-[#151c1f] via-[#23272c] to-[#101314] text-white font-sans">
+      {/* Sticky Header/Navbar */}
+      <header className="w-full fixed top-0 left-0 z-50 bg-[#161b1d]/80 border-b border-[#22282c] px-4 py-3 flex items-center justify-between shadow-md backdrop-blur-md">
         <div className="flex items-center space-x-3">
           <span className="bg-gradient-to-br from-green-400 to-green-600 w-8 h-8 rounded-md flex items-center justify-center font-bold text-xl">N</span>
           <span className="text-lg font-semibold tracking-wide text-white">Nyvorr Shop</span>
@@ -29,22 +29,21 @@ function App() {
       </header>
 
       {/* Announcement Section */}
-      <section className="max-w-2xl mx-auto mt-8 bg-[#181e20] rounded-lg border border-[#22282c] shadow p-4 flex flex-col items-center">
+      <section className="max-w-2xl mx-auto mt-8 bg-[#181e20] rounded-lg border border-[#22282c] shadow p-4 flex flex-col items-center transition duration-200 ease-out">
         <span className="text-lg font-semibold mb-1 text-green-400">Announcement</span>
         <p className="text-gray-200 text-center">🚀 Welcome to Nyvorr Digital Store – Your premium destination for digital products. Stay tuned for updates!</p>
       </section>
 
       {/* Products Section */}
       <Products />
-
       {/* Reviews Section */}
       <Reviews />
-
       {/* News Section */}
       <News />
-
       {/* Contact Section */}
       <Contact />
+
+      <ScrollToTop /> {/* Floating scroll up button */}
 
       {/* Footer */}
       <Footer />
