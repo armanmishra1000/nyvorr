@@ -4,9 +4,9 @@ import products from "../data/products";
 
 function Products() {
   return (
-    <section className="max-w-7xl mx-auto mt-12 px-4">
-      <h2 className="text-2xl font-bold text-green-400 mb-4 text-center">Products</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-7">
+    <section className="max-w-7xl mx-auto mt-8 sm:mt-12 px-2 sm:px-4">
+      <h2 className="text-xl sm:text-2xl font-bold text-green-400 mb-4 text-center">Products</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-7">
         {products.map((product) => (
           <div
             key={product.id}
@@ -15,10 +15,10 @@ function Products() {
             <img
               src={product.image}
               alt={product.name}
-              className="h-20 mb-4 object-contain"
+              className="h-16 sm:h-20 mb-3 sm:mb-4 object-contain"
               draggable={false}
             />
-            <h3 className="font-semibold text-lg mb-1 text-center">{product.name}</h3>
+            <h3 className="font-semibold text-base sm:text-lg mb-1 text-center">{product.name}</h3>
             <div className="flex items-center justify-between w-full mb-2">
               <span className="text-green-400 font-bold">{product.price}</span>
               <span

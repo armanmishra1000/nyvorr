@@ -17,20 +17,20 @@ function StarRating({ count }) {
 
 function Reviews() {
   return (
-    <section className="max-w-5xl mx-auto mt-16 px-4">
-      <h2 className="text-2xl font-bold text-green-400 mb-4 text-center">Reviews</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+    <section className="max-w-5xl mx-auto mt-12 px-2 sm:px-4">
+      <h2 className="text-xl sm:text-2xl font-bold text-green-400 mb-4 text-center">Reviews</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
         {reviews.map((review) => (
           <div
             key={review.id}
-            className="bg-[#181e20] border border-[#22282c] rounded-xl shadow-md p-5 flex flex-col"
+            className="bg-[#181e20] border border-[#22282c] rounded-xl shadow-md p-4 sm:p-5 flex flex-col"
           >
             <div className="flex items-center mb-2">
               <StarRating count={review.rating} />
               <span className="ml-2 text-sm text-gray-400">{review.user}</span>
               <span className="ml-auto text-xs text-gray-600">{review.time}</span>
             </div>
-            <p className="text-gray-200">{review.comment}</p>
+            <p className="text-gray-200 text-sm sm:text-base">{review.comment}</p>
           </div>
         ))}
       </div>
