@@ -1,8 +1,10 @@
-// src/components/Products.jsx
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import products from "../data/products";
 
 function Products() {
+  const navigate = useNavigate();
+
   return (
     <section className="max-w-7xl mx-auto mt-8 sm:mt-12 px-2 sm:px-4">
       <h2 className="text-xl sm:text-2xl font-bold text-green-400 mb-4 text-center">Products</h2>
@@ -12,7 +14,7 @@ function Products() {
             key={product.id}
             className="bg-[#181e20] border border-[#22282c] rounded-xl shadow-md p-4 flex flex-col items-center transition hover:scale-[1.03] hover:border-green-400"
           >
-            {/* Image wrapper for perfect crop */}
+            {/* ...image and name... */}
             <div className="w-24 h-24 mb-4 rounded-md overflow-hidden border border-[#232a32] bg-[#20272a] shadow-sm flex items-center justify-center">
               <img
                 src={product.image}
@@ -41,6 +43,11 @@ function Products() {
                   : "bg-gray-800 text-gray-500 cursor-not-allowed"
               }`}
               disabled={product.status !== "In Stock"}
+              onClick={() => {
+                if (product.status === "In Stock") {
+                  navigate(`/product/${product.id}`);
+                }
+              }}
             >
               {product.status === "In Stock" ? "Buy Now" : "Out of Stock"}
             </button>
