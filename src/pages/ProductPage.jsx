@@ -1,14 +1,21 @@
-// src/pages/ProductPage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import products from "../data/products";
 
 function ProductPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Find the product with the matching id
-  const product = products.find(p => String(p.id) === String(id));
+  useEffect(() => {
+    fetch(`http://localhost:4000/api/products`)
+      .then((res) => res.json())
+      .then((all) => {
+        setProduct(all.find((p) => String(p.id) === String(id)));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [id]);
 
   // Form state
   const [email, setEmail] = useState("");
@@ -54,7 +61,14 @@ function ProductPage() {
     }
   };
 
-  if (!product) {
+  if (loading)
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <span className="text-green-400">Loading product...</span>
+      </div>
+    );
+
+  if (!product)
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <h1 className="text-2xl font-bold mb-4 text-red-400">Product Not Found</h1>
@@ -66,16 +80,15 @@ function ProductPage() {
         </button>
       </div>
     );
-  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
       <div className="bg-[#181e20] border border-[#22282c] rounded-2xl shadow-xl max-w-md w-full p-8 flex flex-col items-center">
-        <div className="w-40 h-28 mb-4 rounded-lg overflow-hidden border border-[#232a32] bg-[#20272a] shadow-sm flex items-center justify-center">
+        <div className="w-full h-40 mb-4 rounded-lg overflow-hidden border border-[#232a32] bg-[#20272a] shadow-sm flex items-center justify-center">
           <img
             src={product.image}
             alt={product.name}
-            className="w-full h-full object-contain"
+            className="w-full h-full object-cover"
             draggable={false}
           />
         </div>
