@@ -1,16 +1,7 @@
-// src/pages/AdminPanel.jsx
-import React, { useState } from "react";
-
-const getProductsFromStorage = () => {
-  try {
-    return JSON.parse(localStorage.getItem("products")) || [];
-  } catch {
-    return [];
-  }
-};
+import React, { useState, useEffect } from "react";
 
 function AdminPanel() {
-  const [products, setProducts] = useState(getProductsFromStorage());
+  const [products, setProducts] = useState([]);
   const [newProduct, setNewProduct] = useState({
     name: "",
     price: "",
@@ -19,32 +10,38 @@ function AdminPanel() {
     description: ""
   });
 
-  // Add a product
-  const addProduct = (e) => {
+  // Fetch products from backend API
+  useEffect(() => {
+    fetch("http://localhost:4000/api/products")
+      .then(res => res.json())
+      .then(setProducts);
+  }, []);
+
+  // Add product - POST to backend
+  const addProduct = async (e) => {
     e.preventDefault();
-    // Image path polish: force "/images/" prefix for all new local images
     let img = newProduct.image.trim();
     if (!img) img = "/images/no-image.png";
-    else if (
-      !img.startsWith("/") &&
-      !img.startsWith("http") &&
-      !img.startsWith("images/")
-    ) {
+    else if (!img.startsWith("/") && !img.startsWith("http") && !img.startsWith("images/")) {
       img = "/images/" + img.replace(/^.*[\\/]/, "");
     } else if (img.startsWith("images/")) {
       img = "/" + img;
     }
     const productToAdd = {
-      id: Date.now(),
       name: newProduct.name,
       price: newProduct.price,
       status: newProduct.status,
       image: img,
       description: newProduct.description,
     };
-    const updated = [...products, productToAdd];
-    setProducts(updated);
-    localStorage.setItem("products", JSON.stringify(updated));
+    // POST to backend API
+    const res = await fetch("http://localhost:4000/api/products", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(productToAdd),
+    });
+    const data = await res.json();
+    setProducts(products.concat(data.product));
     setNewProduct({
       name: "",
       price: "",
@@ -54,11 +51,10 @@ function AdminPanel() {
     });
   };
 
-  // Remove a product
-  const removeProduct = (id) => {
-    const updated = products.filter((p) => p.id !== id);
-    setProducts(updated);
-    localStorage.setItem("products", JSON.stringify(updated));
+  // Delete product - DELETE from backend
+  const removeProduct = async (id) => {
+    await fetch(`http://localhost:4000/api/products/${id}`, { method: "DELETE" });
+    setProducts(products.filter((p) => p.id !== id));
   };
 
   return (
@@ -109,8 +105,6 @@ function AdminPanel() {
           Add Product
         </button>
       </form>
-
-      {/* Products List */}
       <div className="space-y-4">
         {products.map((p) => (
           <div key={p.id} className="bg-[#20272a] border border-[#22282c] rounded-xl flex items-center p-4 gap-4">
