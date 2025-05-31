@@ -23,12 +23,12 @@ router.get('/', (req, res) => {
   res.json(readProducts());
 });
 
-// ADD new product
+// ADD new product (now with description support)
 router.post('/', (req, res) => {
   const products = readProducts();
-  const { name, price, status, image } = req.body;
+  const { name, price, status, image, description } = req.body;
   const id = products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
-  const newProduct = { id, name, price, status, image };
+  const newProduct = { id, name, price, status, image, description: description || "" };
   products.push(newProduct);
   writeProducts(products);
   res.json({ success: true, product: newProduct });

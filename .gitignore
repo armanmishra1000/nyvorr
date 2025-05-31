@@ -28,6 +28,7 @@ lerna-debug.log*
 *.env
 *.env.*
 google-credentials.json
+products.json
 
 # === Misc ===
 coverage/

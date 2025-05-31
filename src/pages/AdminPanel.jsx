@@ -1,47 +1,64 @@
 // src/pages/AdminPanel.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+
+const getProductsFromStorage = () => {
+  try {
+    return JSON.parse(localStorage.getItem("products")) || [];
+  } catch {
+    return [];
+  }
+};
 
 function AdminPanel() {
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState(getProductsFromStorage());
   const [newProduct, setNewProduct] = useState({
     name: "",
     price: "",
     status: "In Stock",
     image: "",
+    description: ""
   });
-  const [loading, setLoading] = useState(false);
 
-  // Fetch products from backend on load
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = () => {
-    fetch("http://localhost:4000/api/products")
-      .then(res => res.json())
-      .then(setProducts);
-  };
-
-  // Add product via backend
-  const addProduct = async (e) => {
+  // Add a product
+  const addProduct = (e) => {
     e.preventDefault();
-    setLoading(true);
-    await fetch("http://localhost:4000/api/products", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newProduct),
+    // Image path polish: force "/images/" prefix for all new local images
+    let img = newProduct.image.trim();
+    if (!img) img = "/images/no-image.png";
+    else if (
+      !img.startsWith("/") &&
+      !img.startsWith("http") &&
+      !img.startsWith("images/")
+    ) {
+      img = "/images/" + img.replace(/^.*[\\/]/, "");
+    } else if (img.startsWith("images/")) {
+      img = "/" + img;
+    }
+    const productToAdd = {
+      id: Date.now(),
+      name: newProduct.name,
+      price: newProduct.price,
+      status: newProduct.status,
+      image: img,
+      description: newProduct.description,
+    };
+    const updated = [...products, productToAdd];
+    setProducts(updated);
+    localStorage.setItem("products", JSON.stringify(updated));
+    setNewProduct({
+      name: "",
+      price: "",
+      status: "In Stock",
+      image: "",
+      description: ""
     });
-    setNewProduct({ name: "", price: "", status: "In Stock", image: "" });
-    fetchProducts();
-    setLoading(false);
   };
 
-  // Delete product via backend
-  const removeProduct = async (id) => {
-    setLoading(true);
-    await fetch(`http://localhost:4000/api/products/${id}`, { method: "DELETE" });
-    fetchProducts();
-    setLoading(false);
+  // Remove a product
+  const removeProduct = (id) => {
+    const updated = products.filter((p) => p.id !== id);
+    setProducts(updated);
+    localStorage.setItem("products", JSON.stringify(updated));
   };
 
   return (
@@ -66,7 +83,7 @@ function AdminPanel() {
         />
         <input
           type="text"
-          placeholder="Image URL (or local path)"
+          placeholder="Image path (e.g. /images/netflix.png)"
           className="px-3 py-2 rounded bg-[#22282c] border border-[#232a32] text-white"
           value={newProduct.image}
           onChange={e => setNewProduct({ ...newProduct, image: e.target.value })}
@@ -79,12 +96,17 @@ function AdminPanel() {
           <option value="In Stock">In Stock</option>
           <option value="Out of Stock">Out of Stock</option>
         </select>
+        <textarea
+          placeholder="Product Description"
+          className="px-3 py-2 rounded bg-[#22282c] border border-[#232a32] text-white"
+          value={newProduct.description}
+          onChange={e => setNewProduct({ ...newProduct, description: e.target.value })}
+        />
         <button
           type="submit"
           className="bg-green-500 hover:bg-green-600 text-black px-4 py-2 rounded font-semibold mt-2"
-          disabled={loading}
         >
-          {loading ? "Processing..." : "Add Product"}
+          Add Product
         </button>
       </form>
 
@@ -96,11 +118,13 @@ function AdminPanel() {
             <div className="flex-1">
               <div className="font-bold text-lg text-green-400">{p.name}</div>
               <div className="text-gray-300">{p.price} | {p.status}</div>
+              {p.description && (
+                <div className="text-gray-500 text-sm mt-1">{p.description}</div>
+              )}
             </div>
             <button
               className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded"
               onClick={() => removeProduct(p.id)}
-              disabled={loading}
             >
               Delete
             </button>

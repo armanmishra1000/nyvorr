@@ -1,3 +1,4 @@
+// src/pages/ProductPage.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -81,15 +82,34 @@ function ProductPage() {
       </div>
     );
 
+  // Debug: Log the image path to catch mistakes!
+  console.log("Image path for product:", product.image);
+
+  // Only accept images that start with /images/ (public/images)
+  let imgSrc = "/images/no-image.png";
+  if (product.image) {
+    if (product.image.startsWith("/images/")) {
+      imgSrc = product.image;
+    } else if (product.image.startsWith("images/")) {
+      imgSrc = "/" + product.image;
+    } else if (
+      product.image.startsWith("http://") ||
+      product.image.startsWith("https://")
+    ) {
+      imgSrc = product.image;
+    }
+  }
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
       <div className="bg-[#181e20] border border-[#22282c] rounded-2xl shadow-xl max-w-md w-full p-8 flex flex-col items-center">
         <div className="w-full h-40 mb-4 rounded-lg overflow-hidden border border-[#232a32] bg-[#20272a] shadow-sm flex items-center justify-center">
           <img
-            src={product.image}
+            src={imgSrc}
             alt={product.name}
             className="w-full h-full object-cover"
             draggable={false}
+            onError={e => { e.target.src = "/images/no-image.png"; }}
           />
         </div>
         <h1 className="text-2xl font-bold mb-2 text-green-400 text-center">{product.name}</h1>
@@ -97,6 +117,9 @@ function ProductPage() {
         <span className={`text-xs mb-4 px-3 py-1 rounded-full ${product.status === "In Stock" ? "bg-green-900 text-green-300" : "bg-gray-700 text-gray-400"}`}>
           {product.status}
         </span>
+        {product.description && (
+          <div className="text-gray-300 text-center mb-4">{product.description}</div>
+        )}
         <p className="text-gray-300 text-center mb-4">
           Get instant access after payment. Please enter your contact details below to receive your order.
         </p>
