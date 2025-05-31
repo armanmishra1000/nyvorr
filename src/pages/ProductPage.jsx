@@ -39,16 +39,18 @@ function ProductPage() {
     }
     setError("");
     try {
+      const order_id = `nyvorr_${product.id}_${Date.now()}`;
       const response = await fetch("http://localhost:4000/api/create-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: product.price.replace("$", ""),
           currency: "USDT",
-          order_id: `nyvorr_${product.id}_${Date.now()}`,
+          order_id,
           email,
           telegram,
           product_name: product.name,
+          url_return: `http://localhost:5173/payment-success?order_id=${order_id}`
         }),
       });
       const data = await response.json();

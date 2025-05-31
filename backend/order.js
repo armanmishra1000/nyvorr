@@ -82,6 +82,29 @@ async function updateOrderStatusInSheet(order_id, newStatus) {
   }
 }
 
+// -- Google Sheets: Get Order Status (NEW ENDPOINT)
+async function getOrderStatusFromSheet(order_id) {
+  try {
+    const auth = new google.auth.GoogleAuth({
+      keyFile: GOOGLE_CREDENTIALS_PATH,
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    });
+    const sheets = google.sheets({ version: "v4", auth });
+
+    const read = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: "Sheet1!A2:F",
+    });
+    const rows = read.data.values || [];
+    const idx = rows.findIndex(r => r[0] === order_id);
+    if (idx === -1) return "Unknown";
+    return rows[idx][5] || "Unknown"; // F column is status
+  } catch (err) {
+    console.error("Failed to read order status:", err.message || err);
+    return "Error";
+  }
+}
+
 // -- Cryptomus sign
 function createSign(body, apiKey) {
   const bodyStr = JSON.stringify(body);
@@ -94,12 +117,12 @@ function createSign(body, apiKey) {
 // -- Create payment
 router.post('/create-payment', async (req, res) => {
   try {
-    const { amount, currency, order_id, email, telegram, product_name } = req.body;
+    const { amount, currency, order_id, email, telegram, product_name, url_return } = req.body;
     const cryptomusBody = {
       amount,
       currency,
       order_id,
-      url_return: "http://localhost:5173/payment-success",
+      url_return: url_return || "http://localhost:5173/payment-success",
       url_callback: "http://localhost:4000/api/payment-webhook",
       to_email: email,
       comment: `Order for ${product_name} | Telegram: ${telegram}`,
@@ -155,6 +178,13 @@ router.post('/payment-webhook', async (req, res) => {
     console.error("Failed to update order in Google Sheets:", err.message || err);
     res.status(500).json({ error: "Failed to update order status" });
   }
+});
+
+// -- ORDER STATUS CHECK ENDPOINT (for frontend PaymentSuccess page)
+router.get('/order-status/:order_id', async (req, res) => {
+  const order_id = req.params.order_id;
+  const status = await getOrderStatusFromSheet(order_id);
+  res.json({ status });
 });
 
 module.exports = router;
