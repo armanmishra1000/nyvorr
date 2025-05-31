@@ -11,6 +11,22 @@ function Products() {
       .then(setProducts);
   }, []);
 
+  // Helper to get min price for product
+  function getDisplayPrice(product) {
+    if (Array.isArray(product.variations) && product.variations.length > 0) {
+      const prices = product.variations
+        .map((v) => parseFloat(v.price.replace("$", "")))
+        .filter((n) => !isNaN(n));
+      if (prices.length)
+        return (
+          <span className="text-green-400 font-bold">
+            Starting from ${Math.min(...prices).toFixed(2)}
+          </span>
+        );
+    }
+    return <span className="text-green-400 font-bold">{product.price}</span>;
+  }
+
   return (
     <section className="max-w-7xl mx-auto mt-8 sm:mt-12 px-2 sm:px-4">
       <h2 className="text-xl sm:text-2xl font-bold text-green-400 mb-4 text-center">Products</h2>
@@ -29,11 +45,8 @@ function Products() {
               />
             </div>
             <h3 className="font-semibold text-base sm:text-lg mb-1 text-center">{product.name}</h3>
-            {product.description && (
-              <div className="text-gray-400 text-xs mb-2 text-center min-h-[32px] line-clamp-2">{product.description}</div>
-            )}
             <div className="flex items-center justify-between w-full mb-2">
-              <span className="text-green-400 font-bold">{product.price}</span>
+              {getDisplayPrice(product)}
               <span
                 className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
                   product.status === "In Stock"

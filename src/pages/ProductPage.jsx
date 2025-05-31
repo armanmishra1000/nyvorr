@@ -6,14 +6,17 @@ function ProductPage() {
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedVar, setSelectedVar] = useState(0);
+  const [selectedVariation, setSelectedVariation] = useState(null);
 
   useEffect(() => {
     fetch(`http://localhost:4000/api/products`)
       .then((res) => res.json())
       .then((all) => {
-        const found = all.find((p) => String(p.id) === String(id));
-        setProduct(found);
+        const p = all.find((p) => String(p.id) === String(id));
+        setProduct(p);
+        if (p?.variations && p.variations.length > 0) {
+          setSelectedVariation(p.variations[0]);
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -40,18 +43,22 @@ function ProductPage() {
     }
     setError("");
     try {
-      const variation = product.variations[selectedVar];
+      // Pick price: variation or product
+      const price = selectedVariation ? selectedVariation.price.replace("$", "") : product.price.replace("$", "");
+      const product_name = selectedVariation
+        ? `${product.name} (${selectedVariation.label})`
+        : product.name;
       const order_id = `nyvorr_${product.id}_${Date.now()}`;
       const response = await fetch("http://localhost:4000/api/create-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: variation.price.replace("$", ""),
+          amount: price,
           currency: "USDT",
           order_id,
           email,
           telegram,
-          product_name: `${product.name} (${variation.label})`,
+          product_name,
           url_return: `http://localhost:5173/payment-success?order_id=${order_id}`
         }),
       });
@@ -86,8 +93,7 @@ function ProductPage() {
       </div>
     );
 
-  const variation = product.variations?.[selectedVar];
-
+  // Image logic
   let imgSrc = "/images/no-image.png";
   if (product.image) {
     if (product.image.startsWith("/images/")) {
@@ -115,28 +121,36 @@ function ProductPage() {
           />
         </div>
         <h1 className="text-2xl font-bold mb-2 text-green-400 text-center">{product.name}</h1>
+        {Array.isArray(product.variations) && product.variations.length > 0 ? (
+          <div className="w-full mb-4">
+            <label className="block mb-1 text-gray-300 font-medium">Select Plan:</label>
+            <select
+              className="w-full px-3 py-2 rounded bg-[#22282c] border border-[#232a32] text-white"
+              value={selectedVariation?.label || ""}
+              onChange={e =>
+                setSelectedVariation(
+                  product.variations.find(v => v.label === e.target.value)
+                )
+              }
+            >
+              {product.variations.map((v) => (
+                <option key={v.label} value={v.label}>
+                  {v.label} — {v.price}
+                </option>
+              ))}
+            </select>
+            <div className="mt-2 text-green-300 text-lg font-semibold">
+              {selectedVariation?.price}
+            </div>
+          </div>
+        ) : (
+          <p className="text-lg font-semibold text-green-300 mb-2">{product.price}</p>
+        )}
         <span className={`text-xs mb-4 px-3 py-1 rounded-full ${product.status === "In Stock" ? "bg-green-900 text-green-300" : "bg-gray-700 text-gray-400"}`}>
           {product.status}
         </span>
         {product.description && (
           <div className="text-gray-300 text-center mb-4">{product.description}</div>
-        )}
-        {/* Variation selector */}
-        {product.variations?.length > 1 && (
-          <select
-            value={selectedVar}
-            onChange={e => setSelectedVar(Number(e.target.value))}
-            className="w-full px-3 py-2 mb-2 rounded bg-[#22282c] border border-[#232a32] text-white"
-          >
-            {product.variations.map((v, i) => (
-              <option value={i} key={i}>{v.label} — {v.price}</option>
-            ))}
-          </select>
-        )}
-        {variation && (
-          <p className="text-lg font-semibold text-green-300 mb-2">
-            {variation.label}: {variation.price}
-          </p>
         )}
         <p className="text-gray-300 text-center mb-4">
           Get instant access after payment. Please enter your contact details below to receive your order.
@@ -173,6 +187,7 @@ function ProductPage() {
             Pay Now
           </button>
         </form>
+
         <button
           onClick={() => navigate("/")}
           className="text-sm text-green-400 mt-2 underline hover:text-green-300"
