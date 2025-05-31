@@ -1,44 +1,16 @@
 import React, { useEffect, useState } from "react";
-
-function VariationEditor({ variations, setVariations }) {
-  const [newLabel, setNewLabel] = useState("");
-  const [newPrice, setNewPrice] = useState("");
-
-  const addVariation = e => {
-    e.preventDefault();
-    if (!newLabel || !newPrice) return;
-    setVariations([...variations, { label: newLabel, price: newPrice }]);
-    setNewLabel("");
-    setNewPrice("");
-  };
-
-  const removeVariation = idx => {
-    setVariations(variations.filter((_, i) => i !== idx));
-  };
-
-  return (
-    <div>
-      <label className="block font-semibold mb-1 text-green-300">Product Variations</label>
-      {variations.map((v, i) => (
-        <div key={i} className="flex gap-2 mb-2 items-center">
-          <input value={v.label} readOnly className="bg-[#22282c] border border-[#232a32] text-white px-2 py-1 rounded w-36"/>
-          <input value={v.price} readOnly className="bg-[#22282c] border border-[#232a32] text-white px-2 py-1 rounded w-24"/>
-          <button className="bg-red-500 text-white px-2 rounded" onClick={() => removeVariation(i)}>Delete</button>
-        </div>
-      ))}
-      <form className="flex gap-2 mt-2" onSubmit={addVariation}>
-        <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="Label (e.g. 1 Month)" className="bg-[#22282c] border border-[#232a32] text-white px-2 py-1 rounded w-36"/>
-        <input value={newPrice} onChange={e => setNewPrice(e.target.value)} placeholder="Price (e.g. $4.99)" className="bg-[#22282c] border border-[#232a32] text-white px-2 py-1 rounded w-24"/>
-        <button type="submit" className="bg-green-600 text-white px-3 rounded">Add</button>
-      </form>
-    </div>
-  );
-}
+import VariationEditor from "../components/VariationEditor";
 
 function AdminPanel() {
   const [products, setProducts] = useState([]);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: "", status: "In Stock", image: "", description: "", variations: [] });
+  const [form, setForm] = useState({
+    name: "",
+    status: "In Stock",
+    image: "",
+    description: "",
+    variations: [],
+  });
 
   // Fetch products from backend
   useEffect(() => {
@@ -49,13 +21,22 @@ function AdminPanel() {
 
   useEffect(() => {
     if (editing) setForm(editing);
-    else setForm({ name: "", status: "In Stock", image: "", description: "", variations: [] });
+    else setForm({
+      name: "",
+      status: "In Stock",
+      image: "",
+      description: "",
+      variations: [],
+    });
   }, [editing]);
 
   // Add or update product
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.name || form.variations.length === 0) return alert("Name & at least 1 variation required");
+    if (!form.name || form.variations.length === 0) {
+      alert("Name & at least 1 variation required");
+      return;
+    }
     if (editing) {
       // Edit
       fetch(`http://localhost:4000/api/products/${editing.id}`, {
@@ -78,7 +59,13 @@ function AdminPanel() {
         .then(res => res.json())
         .then(data => setProducts([...products, data.product]));
     }
-    setForm({ name: "", status: "In Stock", image: "", description: "", variations: [] });
+    setForm({
+      name: "",
+      status: "In Stock",
+      image: "",
+      description: "",
+      variations: [],
+    });
   };
 
   // Delete product
@@ -96,7 +83,10 @@ function AdminPanel() {
   return (
     <div className="max-w-2xl mx-auto py-10">
       <h1 className="text-2xl font-bold text-green-400 mb-6 text-center">Admin Panel</h1>
-      <form onSubmit={handleSubmit} className="bg-[#181e20] border border-[#22282c] p-5 rounded-xl mb-8 flex flex-col gap-3">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-[#181e20] border border-[#22282c] p-5 rounded-xl mb-8 flex flex-col gap-3"
+      >
         <input
           type="text"
           placeholder="Product Name"
@@ -126,14 +116,28 @@ function AdminPanel() {
           value={form.description}
           onChange={e => setForm({ ...form, description: e.target.value })}
         />
+
+        {/* Variations */}
         <VariationEditor
           variations={form.variations}
           setVariations={vars => setForm(f => ({ ...f, variations: vars }))}
         />
+
         <div className="flex gap-2 mt-2">
-          <button type="submit" className="bg-green-500 hover:bg-green-600 text-black px-4 py-2 rounded font-semibold">{editing ? "Update" : "Add"} Product</button>
+          <button
+            type="submit"
+            className="bg-green-500 hover:bg-green-600 text-black px-4 py-2 rounded font-semibold"
+          >
+            {editing ? "Update" : "Add"} Product
+          </button>
           {editing && (
-            <button onClick={handleCancel} type="button" className="bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
+            <button
+              onClick={handleCancel}
+              type="button"
+              className="bg-gray-500 text-white px-4 py-2 rounded"
+            >
+              Cancel
+            </button>
           )}
         </div>
       </form>
