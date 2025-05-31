@@ -1,4 +1,3 @@
-// src/pages/ProductPage.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -7,12 +6,14 @@ function ProductPage() {
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedVar, setSelectedVar] = useState(0);
 
   useEffect(() => {
     fetch(`http://localhost:4000/api/products`)
       .then((res) => res.json())
       .then((all) => {
-        setProduct(all.find((p) => String(p.id) === String(id)));
+        const found = all.find((p) => String(p.id) === String(id));
+        setProduct(found);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -39,17 +40,18 @@ function ProductPage() {
     }
     setError("");
     try {
+      const variation = product.variations[selectedVar];
       const order_id = `nyvorr_${product.id}_${Date.now()}`;
       const response = await fetch("http://localhost:4000/api/create-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: product.price.replace("$", ""),
+          amount: variation.price.replace("$", ""),
           currency: "USDT",
           order_id,
           email,
           telegram,
-          product_name: product.name,
+          product_name: `${product.name} (${variation.label})`,
           url_return: `http://localhost:5173/payment-success?order_id=${order_id}`
         }),
       });
@@ -84,10 +86,8 @@ function ProductPage() {
       </div>
     );
 
-  // Debug: Log the image path to catch mistakes!
-  console.log("Image path for product:", product.image);
+  const variation = product.variations?.[selectedVar];
 
-  // Only accept images that start with /images/ (public/images)
   let imgSrc = "/images/no-image.png";
   if (product.image) {
     if (product.image.startsWith("/images/")) {
@@ -115,12 +115,28 @@ function ProductPage() {
           />
         </div>
         <h1 className="text-2xl font-bold mb-2 text-green-400 text-center">{product.name}</h1>
-        <p className="text-lg font-semibold text-green-300 mb-2">{product.price}</p>
         <span className={`text-xs mb-4 px-3 py-1 rounded-full ${product.status === "In Stock" ? "bg-green-900 text-green-300" : "bg-gray-700 text-gray-400"}`}>
           {product.status}
         </span>
         {product.description && (
           <div className="text-gray-300 text-center mb-4">{product.description}</div>
+        )}
+        {/* Variation selector */}
+        {product.variations?.length > 1 && (
+          <select
+            value={selectedVar}
+            onChange={e => setSelectedVar(Number(e.target.value))}
+            className="w-full px-3 py-2 mb-2 rounded bg-[#22282c] border border-[#232a32] text-white"
+          >
+            {product.variations.map((v, i) => (
+              <option value={i} key={i}>{v.label} — {v.price}</option>
+            ))}
+          </select>
+        )}
+        {variation && (
+          <p className="text-lg font-semibold text-green-300 mb-2">
+            {variation.label}: {variation.price}
+          </p>
         )}
         <p className="text-gray-300 text-center mb-4">
           Get instant access after payment. Please enter your contact details below to receive your order.
@@ -157,7 +173,6 @@ function ProductPage() {
             Pay Now
           </button>
         </form>
-
         <button
           onClick={() => navigate("/")}
           className="text-sm text-green-400 mt-2 underline hover:text-green-300"

@@ -27,9 +27,9 @@ router.get('/', (req, res) => {
 // --- ADD new product ---
 router.post('/', (req, res) => {
   const products = readProducts();
-  const { name, price, status, image, description } = req.body;
+  const { name, status, image, description, variations } = req.body;
   const id = products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
-  const newProduct = { id, name, price, status, image, description };
+  const newProduct = { id, name, status, image, description, variations: variations || [] };
   products.push(newProduct);
   writeProducts(products);
   res.json({ success: true, product: newProduct });
@@ -54,7 +54,6 @@ router.put('/:id', (req, res) => {
   if (idx === -1)
     return res.status(404).json({ error: "Product not found" });
 
-  // Only update provided fields, keep the rest unchanged
   products[idx] = { ...products[idx], ...req.body, id };
   writeProducts(products);
   res.json({ success: true, product: products[idx] });
