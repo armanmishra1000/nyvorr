@@ -1,3 +1,4 @@
+// src/components/Products.jsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import products from "../data/products";
@@ -14,12 +15,12 @@ function Products() {
             key={product.id}
             className="bg-[#181e20] border border-[#22282c] rounded-xl shadow-md p-4 flex flex-col items-center transition hover:scale-[1.03] hover:border-green-400"
           >
-            {/* ...image and name... */}
-            <div className="w-24 h-24 mb-4 rounded-md overflow-hidden border border-[#232a32] bg-[#20272a] shadow-sm flex items-center justify-center">
+            {/* BIG PRODUCT IMAGE, FULL WIDTH */}
+            <div className="w-full h-40 mb-4 rounded-xl overflow-hidden border border-[#232a32] bg-[#20272a] shadow-sm flex items-center justify-center">
               <img
                 src={product.image}
                 alt={product.name}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover transition hover:scale-105"
                 draggable={false}
               />
             </div>
