@@ -8,6 +8,12 @@ function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [selectedVariation, setSelectedVariation] = useState(null);
 
+  // Coupon states
+  const [couponCode, setCouponCode] = useState("");
+  const [coupon, setCoupon] = useState(null);
+  const [couponError, setCouponError] = useState("");
+  const [checkingCoupon, setCheckingCoupon] = useState(false);
+
   useEffect(() => {
     fetch(`http://localhost:4000/api/products`)
       .then((res) => res.json())
@@ -22,15 +28,69 @@ function ProductPage() {
       .catch(() => setLoading(false));
   }, [id]);
 
+  // Reset coupon if product or variation changes
+  useEffect(() => {
+    setCoupon(null);
+    setCouponCode("");
+    setCouponError("");
+  }, [product, selectedVariation]);
+
   // Form state
   const [email, setEmail] = useState("");
   const [telegram, setTelegram] = useState("");
   const [error, setError] = useState("");
 
-  // Email validation regex
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  // Handle Pay Now (calls backend to get Cryptomus payment link)
+  // --- Coupon Validation ---
+  const handleApplyCoupon = async (e) => {
+    e.preventDefault();
+    setCheckingCoupon(true);
+    setCouponError("");
+    setCoupon(null);
+    try {
+      const res = await fetch("http://localhost:4000/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: couponCode,
+          productId: product.id,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setCouponError(data.error || "Invalid coupon");
+        setCoupon(null);
+      } else {
+        const data = await res.json();
+        setCoupon(data.coupon);
+      }
+    } catch (err) {
+      setCouponError("Coupon validation failed.");
+      setCoupon(null);
+    }
+    setCheckingCoupon(false);
+  };
+
+  // --- Calculate Discount ---
+  function getOriginalPrice() {
+    if (selectedVariation) {
+      return parseFloat(selectedVariation.price.replace("$", ""));
+    }
+    return parseFloat(product?.price?.replace("$", "")) || 0;
+  }
+  function getDiscountedPrice() {
+    if (!coupon) return getOriginalPrice();
+    let price = getOriginalPrice();
+    if (coupon.discountType === "flat") {
+      price -= coupon.discountValue;
+    } else if (coupon.discountType === "percent") {
+      price = price - (price * coupon.discountValue) / 100;
+    }
+    return Math.max(0, price);
+  }
+
+  // --- Pay Now ---
   const handlePay = async (e) => {
     e.preventDefault();
     if (!email || !telegram) {
@@ -43,8 +103,7 @@ function ProductPage() {
     }
     setError("");
     try {
-      // Pick price: variation or product
-      const price = selectedVariation ? selectedVariation.price.replace("$", "") : product.price.replace("$", "");
+      const price = getDiscountedPrice();
       const product_name = selectedVariation
         ? `${product.name} (${selectedVariation.label})`
         : product.name;
@@ -53,12 +112,13 @@ function ProductPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: price,
+          amount: price.toFixed(2),
           currency: "USDT",
           order_id,
           email,
           telegram,
           product_name,
+          coupon: coupon ? coupon.code : undefined,
           url_return: `http://localhost:5173/payment-success?order_id=${order_id}`
         }),
       });
@@ -108,6 +168,7 @@ function ProductPage() {
     }
   }
 
+  // --- UI ---
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
       <div className="bg-[#181e20] border border-[#22282c] rounded-2xl shadow-xl max-w-md w-full p-8 flex flex-col items-center">
@@ -139,9 +200,6 @@ function ProductPage() {
                 </option>
               ))}
             </select>
-            <div className="mt-2 text-green-300 text-lg font-semibold">
-              {selectedVariation?.price}
-            </div>
           </div>
         ) : (
           <p className="text-lg font-semibold text-green-300 mb-2">{product.price}</p>
@@ -152,11 +210,63 @@ function ProductPage() {
         {product.description && (
           <div className="text-gray-300 text-center mb-4">{product.description}</div>
         )}
-        <p className="text-gray-300 text-center mb-4">
-          Get instant access after payment. Please enter your contact details below to receive your order.
-        </p>
 
-        {/* Purchase Form */}
+        {/* --- Coupon UI --- */}
+        <form
+          onSubmit={handleApplyCoupon}
+          className="w-full flex flex-col gap-2 mb-3"
+        >
+          <div className="flex">
+            <input
+              type="text"
+              placeholder="Enter coupon code"
+              className="w-full px-3 py-2 rounded-l bg-[#22282c] border border-[#232a32] text-white focus:outline-none"
+              value={couponCode}
+              onChange={e => setCouponCode(e.target.value)}
+              disabled={!!coupon}
+            />
+            <button
+              type="submit"
+              className={`px-4 py-2 rounded-r bg-green-500 hover:bg-green-600 text-black font-semibold transition ${!!coupon ? "opacity-50 cursor-not-allowed" : ""}`}
+              disabled={!!coupon || checkingCoupon}
+            >
+              {coupon ? "Applied" : checkingCoupon ? "Checking..." : "Apply"}
+            </button>
+          </div>
+          {coupon && (
+            <div className="text-green-400 text-xs mt-1">
+              Coupon applied! {coupon.discountType === "flat"
+                ? `-$${coupon.discountValue}`
+                : `-${coupon.discountValue}%`} off.
+            </div>
+          )}
+          {couponError && (
+            <div className="text-red-400 text-xs mt-1">{couponError}</div>
+          )}
+        </form>
+
+        {/* --- Price Display --- */}
+        <div className="w-full mb-4">
+          {coupon ? (
+            <>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Original:</span>
+                <span className="text-gray-400 line-through">${getOriginalPrice().toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center font-bold">
+                <span className="text-green-300">You Pay:</span>
+                <span className="text-green-400 text-xl">${getDiscountedPrice().toFixed(2)}</span>
+              </div>
+            </>
+          ) : (
+            <div className="flex justify-between items-center font-bold">
+              <span className="text-green-300">Price:</span>
+              <span className="text-green-400 text-xl">${getOriginalPrice().toFixed(2)}</span>
+            </div>
+          )}
+        </div>
+
+        {/* --- Checkout Form --- */}
         <form onSubmit={handlePay} className="w-full flex flex-col gap-4 mb-4">
           <input
             type="email"

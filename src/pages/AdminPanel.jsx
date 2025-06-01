@@ -12,11 +12,28 @@ function AdminPanel() {
     variations: [],
   });
 
-  // Fetch products from backend
+  // COUPON STATE
+  const [coupons, setCoupons] = useState([]);
+  const [couponForm, setCouponForm] = useState({
+    code: "",
+    discountType: "flat",
+    discountValue: "",
+    maxUses: "",
+    productIds: "",
+  });
+
+  // Fetch products
   useEffect(() => {
     fetch("http://localhost:4000/api/products")
       .then(res => res.json())
       .then(setProducts);
+  }, []);
+
+  // Fetch coupons
+  useEffect(() => {
+    fetch("http://localhost:4000/api/coupons")
+      .then(res => res.json())
+      .then(setCoupons);
   }, []);
 
   useEffect(() => {
@@ -38,7 +55,6 @@ function AdminPanel() {
       return;
     }
     if (editing) {
-      // Edit
       fetch(`http://localhost:4000/api/products/${editing.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -50,7 +66,6 @@ function AdminPanel() {
           setEditing(null);
         });
     } else {
-      // Add
       fetch("http://localhost:4000/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -79,6 +94,49 @@ function AdminPanel() {
 
   // Cancel editing
   const handleCancel = () => setEditing(null);
+
+  // ---- COUPON LOGIC ----
+  const handleCouponSubmit = (e) => {
+    e.preventDefault();
+    const ids = couponForm.productIds
+      .split(",")
+      .map(s => s.trim())
+      .filter(Boolean)
+      .map(Number);
+
+    fetch("http://localhost:4000/api/coupons", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: couponForm.code.trim(),
+        discountType: couponForm.discountType,
+        discountValue: Number(couponForm.discountValue),
+        maxUses: couponForm.maxUses ? Number(couponForm.maxUses) : null,
+        productIds: ids,
+      }),
+    })
+      .then(res => res.json())
+      .then(() => {
+        setCouponForm({
+          code: "",
+          discountType: "flat",
+          discountValue: "",
+          maxUses: "",
+          productIds: "",
+        });
+        // Reload coupons list
+        fetch("http://localhost:4000/api/coupons")
+          .then(res => res.json())
+          .then(setCoupons);
+      });
+  };
+
+  const handleDeleteCoupon = (id) => {
+    fetch(`http://localhost:4000/api/coupons/${id}`, { method: "DELETE" })
+      .then(() => {
+        setCoupons(coupons.filter(c => c.id !== id));
+      });
+  };
 
   return (
     <div className="max-w-2xl mx-auto py-10">
@@ -174,6 +232,93 @@ function AdminPanel() {
           </div>
         ))}
       </div>
+
+      {/* ---- Coupon Management Section ---- */}
+      <hr className="my-8 border-gray-700" />
+      <h2 className="text-xl font-bold text-yellow-400 mb-4">Coupon Management</h2>
+      <form
+        onSubmit={handleCouponSubmit}
+        className="bg-[#181e20] border border-[#22282c] p-4 rounded-xl mb-6 flex flex-col gap-2"
+      >
+        <div className="flex flex-wrap gap-3">
+          <input
+            type="text"
+            placeholder="Coupon Code"
+            className="px-2 py-1 rounded bg-[#22282c] border border-[#232a32] text-white w-32"
+            value={couponForm.code}
+            onChange={e => setCouponForm(f => ({ ...f, code: e.target.value }))}
+            required
+          />
+          <select
+            className="px-2 py-1 rounded bg-[#22282c] border border-[#232a32] text-white w-28"
+            value={couponForm.discountType}
+            onChange={e => setCouponForm(f => ({ ...f, discountType: e.target.value }))}
+          >
+            <option value="flat">Flat ($)</option>
+            <option value="percent">Percent (%)</option>
+          </select>
+          <input
+            type="number"
+            placeholder="Value"
+            className="px-2 py-1 rounded bg-[#22282c] border border-[#232a32] text-white w-24"
+            value={couponForm.discountValue}
+            onChange={e => setCouponForm(f => ({ ...f, discountValue: e.target.value }))}
+            required
+          />
+          <input
+            type="number"
+            placeholder="Max Uses"
+            className="px-2 py-1 rounded bg-[#22282c] border border-[#232a32] text-white w-20"
+            value={couponForm.maxUses}
+            onChange={e => setCouponForm(f => ({ ...f, maxUses: e.target.value }))}
+          />
+          <input
+            type="text"
+            placeholder="Product IDs (comma, blank=all)"
+            className="px-2 py-1 rounded bg-[#22282c] border border-[#232a32] text-white w-44"
+            value={couponForm.productIds}
+            onChange={e => setCouponForm(f => ({ ...f, productIds: e.target.value }))}
+          />
+          <button
+            type="submit"
+            className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-1 rounded font-semibold"
+          >
+            Create Coupon
+          </button>
+        </div>
+      </form>
+
+      {/* List coupons */}
+      <div className="space-y-2">
+        {coupons.length === 0 && <div className="text-gray-400">No coupons yet.</div>}
+        {coupons.map(c => (
+          <div
+            key={c.id}
+            className="flex items-center justify-between bg-[#20272a] border border-[#22282c] rounded p-2"
+          >
+            <div>
+              <span className="font-mono text-yellow-400">{c.code}</span>
+              {" — "}
+              {c.discountType === "flat"
+                ? <>${c.discountValue} off</>
+                : <>{c.discountValue}% off</>}
+              {c.maxUses && (
+                <span className="ml-2 text-xs text-gray-400">({c.used || 0}/{c.maxUses} used)</span>
+              )}
+              {c.productIds && c.productIds.length > 0 && (
+                <span className="ml-2 text-xs text-green-400">Product IDs: [{c.productIds.join(", ")}]</span>
+              )}
+            </div>
+            <button
+              onClick={() => handleDeleteCoupon(c.id)}
+              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
+            >
+              Delete
+            </button>
+          </div>
+        ))}
+      </div>
+      {/* ---- End coupon section ---- */}
     </div>
   );
 }

@@ -29,6 +29,7 @@ app.use('/api', require('./products'));
 app.use('/api', require('./order'));
 app.use('/api/products', require('./products'));
 app.use('/api/order', require('./order'));
+app.use('/api/coupons', require('./coupons'));
 
 // Start server
 const PORT = 4000;
