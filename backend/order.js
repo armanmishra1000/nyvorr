@@ -1,109 +1,14 @@
+// backend/order.js
 const express = require('express');
 const axios = require('axios');
 const crypto = require('crypto');
-const { google } = require('googleapis');
-const path = require('path');
+const Order = require('./models/Order');
 const router = express.Router();
 
 require('dotenv').config();
 
 const CRYPTOMUS_API_KEY = process.env.CRYPTOMUS_API_KEY;
 const CRYPTOMUS_MERCHANT_UUID = process.env.CRYPTOMUS_MERCHANT_UUID;
-const SHEET_ID = "1lNXbjBWWyyr3wvclyepBrUujU3OFi0PkjKrzx2CzKw4";
-const GOOGLE_CREDENTIALS_PATH = path.join(__dirname, "google-credentials.json");
-
-// -- Google Sheets: Add Row
-async function appendOrderToSheet(order) {
-  try {
-    const auth = new google.auth.GoogleAuth({
-      keyFile: GOOGLE_CREDENTIALS_PATH,
-      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-    });
-    const sheets = google.sheets({ version: "v4", auth });
-
-    const values = [[
-      order.order_id,
-      order.product_name,
-      order.email,
-      order.telegram,
-      order.amount,
-      order.status || "Pending",
-      order.payment_id || "",
-      new Date().toLocaleString(),
-    ]];
-
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
-      range: "Sheet1!A1",
-      valueInputOption: "USER_ENTERED",
-      resource: { values },
-    });
-    console.log('Logged new order to Google Sheets.');
-  } catch (err) {
-    console.error("Failed to log order to Google Sheets:", err.message || err);
-    if (err.response && err.response.data) {
-      console.error('Full error:', JSON.stringify(err.response.data, null, 2));
-    }
-  }
-}
-
-// -- Google Sheets: Update Status
-async function updateOrderStatusInSheet(order_id, newStatus) {
-  try {
-    const auth = new google.auth.GoogleAuth({
-      keyFile: GOOGLE_CREDENTIALS_PATH,
-      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-    });
-    const sheets = google.sheets({ version: "v4", auth });
-
-    const read = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: "Sheet1!A2:H",
-    });
-    const rows = read.data.values || [];
-    const idx = rows.findIndex(r => r[0] === order_id);
-
-    if (idx === -1) throw new Error(`Order ID ${order_id} not found in sheet`);
-    const sheetRow = idx + 2;
-    const statusCol = "F";
-
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SHEET_ID,
-      range: `Sheet1!${statusCol}${sheetRow}`,
-      valueInputOption: "USER_ENTERED",
-      resource: { values: [[newStatus]] },
-    });
-    console.log(`Order ${order_id} updated to status: ${newStatus}`);
-  } catch (err) {
-    console.error(`Failed to update order ${order_id} in Google Sheets:`, err.message || err);
-    if (err.response && err.response.data) {
-      console.error('Full error:', JSON.stringify(err.response.data, null, 2));
-    }
-  }
-}
-
-// -- Google Sheets: Get Order Status (NEW ENDPOINT)
-async function getOrderStatusFromSheet(order_id) {
-  try {
-    const auth = new google.auth.GoogleAuth({
-      keyFile: GOOGLE_CREDENTIALS_PATH,
-      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-    });
-    const sheets = google.sheets({ version: "v4", auth });
-
-    const read = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: "Sheet1!A2:F",
-    });
-    const rows = read.data.values || [];
-    const idx = rows.findIndex(r => r[0] === order_id);
-    if (idx === -1) return "Unknown";
-    return rows[idx][5] || "Unknown"; // F column is status
-  } catch (err) {
-    console.error("Failed to read order status:", err.message || err);
-    return "Error";
-  }
-}
 
 // -- Cryptomus sign
 function createSign(body, apiKey) {
@@ -114,7 +19,7 @@ function createSign(body, apiKey) {
   return md5.digest('hex');
 }
 
-// -- Create payment
+// -- Create payment & store order in MongoDB
 router.post('/create-payment', async (req, res) => {
   try {
     const { amount, currency, order_id, email, telegram, product_name, url_return } = req.body;
@@ -141,8 +46,8 @@ router.post('/create-payment', async (req, res) => {
       }
     );
 
-    // Log order to Google Sheets (Pending)
-    await appendOrderToSheet({
+    // Save order in MongoDB
+    await Order.create({
       order_id,
       product_name,
       email,
@@ -159,32 +64,46 @@ router.post('/create-payment', async (req, res) => {
   }
 });
 
-// -- Webhook: update status
+// -- Payment webhook: update status in MongoDB
 router.post('/payment-webhook', async (req, res) => {
   const { order_id, status } = req.body;
   console.log('Webhook received:', req.body);
   try {
-    if (status === "paid" || status === "completed") {
-      await updateOrderStatusInSheet(order_id, "Paid");
-      console.log(`Order ${order_id} marked as Paid in Google Sheets!`);
-    } else if (status === "cancel" || status === "fail" || status === "error") {
-      await updateOrderStatusInSheet(order_id, "Failed");
-      console.log(`Order ${order_id} marked as Failed in Google Sheets.`);
-    } else {
-      console.log(`Order ${order_id} has unhandled status: ${status}`);
-    }
+    let newStatus = "Pending";
+    if (status === "paid" || status === "completed") newStatus = "Paid";
+    if (status === "cancel" || status === "fail" || status === "error") newStatus = "Failed";
+    await Order.findOneAndUpdate(
+      { order_id },
+      { status: newStatus },
+      { new: true }
+    );
+    console.log(`Order ${order_id} status updated to: ${newStatus}`);
     res.json({ success: true });
   } catch (err) {
-    console.error("Failed to update order in Google Sheets:", err.message || err);
+    console.error("Failed to update order in MongoDB:", err.message || err);
     res.status(500).json({ error: "Failed to update order status" });
   }
 });
 
-// -- ORDER STATUS CHECK ENDPOINT (for frontend PaymentSuccess page)
+// -- Order status check endpoint
 router.get('/order-status/:order_id', async (req, res) => {
-  const order_id = req.params.order_id;
-  const status = await getOrderStatusFromSheet(order_id);
-  res.json({ status });
+  try {
+    const order = await Order.findOne({ order_id: req.params.order_id });
+    if (!order) return res.json({ status: "Unknown" });
+    res.json({ status: order.status });
+  } catch (err) {
+    res.status(500).json({ status: "Error" });
+  }
+});
+
+// --- (Optional) List all orders (admin) ---
+router.get('/orders', async (req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch orders." });
+  }
 });
 
 module.exports = router;

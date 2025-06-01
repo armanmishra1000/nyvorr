@@ -2,12 +2,14 @@ import React, { useState } from "react";
 import ProductFormPanel from "../components/admin/ProductFormPanel";
 import ProductListPanel from "../components/admin/ProductListPanel";
 import CouponPanel from "../components/admin/CouponPanel";
-import UserListPanel from "../components/admin/UserListPanel"; // ADD THIS LINE
+import UserListPanel from "../components/admin/UserListPanel";
+import OrderListPanel from "../components/admin/OrderListPanel"; // <-- NEW
 
 const SECTIONS = [
   { key: "products", label: "Products" },
   { key: "coupons", label: "Coupons" },
-  { key: "users", label: "Users" }, // ADD THIS LINE
+  { key: "orders", label: "Orders" },      // <-- NEW
+  { key: "users", label: "Users" }
 ];
 
 function AdminPanel() {
@@ -84,7 +86,6 @@ function AdminPanel() {
   const handleEdit = (product) => setEditing(product);
   const handleCancel = () => setEditing(null);
 
-  // --- Render Section Panels ---
   function renderSection() {
     if (activeSection === "products") {
       return (
@@ -107,8 +108,11 @@ function AdminPanel() {
     if (activeSection === "coupons") {
       return <CouponPanel products={products} />;
     }
+    if (activeSection === "orders") {
+      return <OrderListPanel />; // Show orders
+    }
     if (activeSection === "users") {
-      return <UserListPanel />; // SHOW USERS PANEL
+      return <UserListPanel />;
     }
     return null;
   }
@@ -132,8 +136,7 @@ function AdminPanel() {
           </button>
         ))}
       </aside>
-      {/* Main admin content */}
-      <main className="flex-1 px-6 py-10 max-w-3xl mx-auto">
+      <main className="flex-1 px-6 py-10 max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold text-green-400 mb-6 text-center">
           {SECTIONS.find(s => s.key === activeSection)?.label} Management
         </h1>
