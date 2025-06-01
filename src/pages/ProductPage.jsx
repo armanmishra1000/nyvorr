@@ -1,19 +1,32 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import ProductImage from "../components/product/ProductImage";
+import ProductVariationSelector from "../components/product/ProductVariationSelector";
+import CouponApplyForm from "../components/product/CouponApplyForm";
+import PriceDisplay from "../components/product/PriceDisplay";
+import PurchaseForm from "../components/product/PurchaseForm";
 
 function ProductPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  // Data & UI state
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedVariation, setSelectedVariation] = useState(null);
 
-  // Coupon states
+  // Coupon state
   const [couponCode, setCouponCode] = useState("");
   const [coupon, setCoupon] = useState(null);
   const [couponError, setCouponError] = useState("");
   const [checkingCoupon, setCheckingCoupon] = useState(false);
 
+  // Purchase state
+  const [email, setEmail] = useState("");
+  const [telegram, setTelegram] = useState("");
+  const [error, setError] = useState("");
+
+  // Load product
   useEffect(() => {
     fetch(`http://localhost:4000/api/products`)
       .then((res) => res.json())
@@ -28,21 +41,14 @@ function ProductPage() {
       .catch(() => setLoading(false));
   }, [id]);
 
-  // Reset coupon if product or variation changes
+  // Reset coupon when product/variation changes
   useEffect(() => {
     setCoupon(null);
     setCouponCode("");
     setCouponError("");
   }, [product, selectedVariation]);
 
-  // Form state
-  const [email, setEmail] = useState("");
-  const [telegram, setTelegram] = useState("");
-  const [error, setError] = useState("");
-
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  // --- Coupon Validation ---
+  // --- COUPON LOGIC ---
   const handleApplyCoupon = async (e) => {
     e.preventDefault();
     setCheckingCoupon(true);
@@ -57,13 +63,16 @@ function ProductPage() {
           productId: product.id,
         }),
       });
-      if (!res.ok) {
-        const data = await res.json();
+      const data = await res.json();
+      if (!data.valid) {
         setCouponError(data.error || "Invalid coupon");
         setCoupon(null);
       } else {
-        const data = await res.json();
-        setCoupon(data.coupon);
+        setCoupon({
+          code: couponCode,
+          discountType: data.discountType,
+          discountValue: data.discountValue,
+        });
       }
     } catch (err) {
       setCouponError("Coupon validation failed.");
@@ -72,7 +81,7 @@ function ProductPage() {
     setCheckingCoupon(false);
   };
 
-  // --- Calculate Discount ---
+  // --- PRICE LOGIC ---
   function getOriginalPrice() {
     if (selectedVariation) {
       return parseFloat(selectedVariation.price.replace("$", ""));
@@ -90,13 +99,14 @@ function ProductPage() {
     return Math.max(0, price);
   }
 
-  // --- Pay Now ---
+  // --- PURCHASE LOGIC ---
   const handlePay = async (e) => {
     e.preventDefault();
     if (!email || !telegram) {
       setError("Please enter your email and Telegram username.");
       return;
     }
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailPattern.test(email)) {
       setError("Please enter a valid email address.");
       return;
@@ -119,12 +129,12 @@ function ProductPage() {
           telegram,
           product_name,
           coupon: coupon ? coupon.code : undefined,
-          url_return: `http://localhost:5173/payment-success?order_id=${order_id}`
+          url_return: `http://localhost:5173/payment-success?order_id=${order_id}`,
         }),
       });
       const data = await response.json();
       if (data.pay_url) {
-        window.location.href = data.pay_url; // Redirect to Cryptomus payment page
+        window.location.href = data.pay_url;
       } else {
         setError(data.error || "Failed to create payment link.");
       }
@@ -133,6 +143,7 @@ function ProductPage() {
     }
   };
 
+  // --- UI LOADING/ERROR STATES ---
   if (loading)
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -153,150 +164,67 @@ function ProductPage() {
       </div>
     );
 
-  // Image logic
-  let imgSrc = "/images/no-image.png";
-  if (product.image) {
-    if (product.image.startsWith("/images/")) {
-      imgSrc = product.image;
-    } else if (product.image.startsWith("images/")) {
-      imgSrc = "/" + product.image;
-    } else if (
-      product.image.startsWith("http://") ||
-      product.image.startsWith("https://")
-    ) {
-      imgSrc = product.image;
-    }
-  }
-
-  // --- UI ---
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
       <div className="bg-[#181e20] border border-[#22282c] rounded-2xl shadow-xl max-w-md w-full p-8 flex flex-col items-center">
-        <div className="w-full h-40 mb-4 rounded-lg overflow-hidden border border-[#232a32] bg-[#20272a] shadow-sm flex items-center justify-center">
-          <img
-            src={imgSrc}
-            alt={product.name}
-            className="w-full h-full object-cover"
-            draggable={false}
-            onError={e => { e.target.src = "/images/no-image.png"; }}
-          />
-        </div>
-        <h1 className="text-2xl font-bold mb-2 text-green-400 text-center">{product.name}</h1>
-        {Array.isArray(product.variations) && product.variations.length > 0 ? (
-          <div className="w-full mb-4">
-            <label className="block mb-1 text-gray-300 font-medium">Select Plan:</label>
-            <select
-              className="w-full px-3 py-2 rounded bg-[#22282c] border border-[#232a32] text-white"
-              value={selectedVariation?.label || ""}
-              onChange={e =>
-                setSelectedVariation(
-                  product.variations.find(v => v.label === e.target.value)
-                )
-              }
-            >
-              {product.variations.map((v) => (
-                <option key={v.label} value={v.label}>
-                  {v.label} — {v.price}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : (
-          <p className="text-lg font-semibold text-green-300 mb-2">{product.price}</p>
-        )}
-        <span className={`text-xs mb-4 px-3 py-1 rounded-full ${product.status === "In Stock" ? "bg-green-900 text-green-300" : "bg-gray-700 text-gray-400"}`}>
+        {/* Image */}
+        <ProductImage product={product} />
+
+        {/* Title */}
+        <h1 className="text-2xl font-bold mb-2 text-green-400 text-center">
+          {product.name}
+        </h1>
+
+        {/* Variations */}
+        <ProductVariationSelector
+          product={product}
+          selectedVariation={selectedVariation}
+          setSelectedVariation={setSelectedVariation}
+        />
+
+        {/* Status */}
+        <span
+          className={`text-xs mb-4 px-3 py-1 rounded-full ${
+            product.status === "In Stock"
+              ? "bg-green-900 text-green-300"
+              : "bg-gray-700 text-gray-400"
+          }`}
+        >
           {product.status}
         </span>
         {product.description && (
-          <div className="text-gray-300 text-center mb-4">{product.description}</div>
+          <div className="text-gray-300 text-center mb-4">
+            {product.description}
+          </div>
         )}
 
-        {/* --- Coupon UI --- */}
-        <form
-          onSubmit={handleApplyCoupon}
-          className="w-full flex flex-col gap-2 mb-3"
-        >
-          <div className="flex">
-            <input
-              type="text"
-              placeholder="Enter coupon code"
-              className="w-full px-3 py-2 rounded-l bg-[#22282c] border border-[#232a32] text-white focus:outline-none"
-              value={couponCode}
-              onChange={e => setCouponCode(e.target.value)}
-              disabled={!!coupon}
-            />
-            <button
-              type="submit"
-              className={`px-4 py-2 rounded-r bg-green-500 hover:bg-green-600 text-black font-semibold transition ${!!coupon ? "opacity-50 cursor-not-allowed" : ""}`}
-              disabled={!!coupon || checkingCoupon}
-            >
-              {coupon ? "Applied" : checkingCoupon ? "Checking..." : "Apply"}
-            </button>
-          </div>
-          {coupon && (
-            <div className="text-green-400 text-xs mt-1">
-              Coupon applied! {coupon.discountType === "flat"
-                ? `-$${coupon.discountValue}`
-                : `-${coupon.discountValue}%`} off.
-            </div>
-          )}
-          {couponError && (
-            <div className="text-red-400 text-xs mt-1">{couponError}</div>
-          )}
-        </form>
+        {/* Coupon Form */}
+        <CouponApplyForm
+          couponCode={couponCode}
+          setCouponCode={setCouponCode}
+          coupon={coupon}
+          couponError={couponError}
+          checkingCoupon={checkingCoupon}
+          handleApplyCoupon={handleApplyCoupon}
+        />
 
-        {/* --- Price Display --- */}
-        <div className="w-full mb-4">
-          {coupon ? (
-            <>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-300">Original:</span>
-                <span className="text-gray-400 line-through">${getOriginalPrice().toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center font-bold">
-                <span className="text-green-300">You Pay:</span>
-                <span className="text-green-400 text-xl">${getDiscountedPrice().toFixed(2)}</span>
-              </div>
-            </>
-          ) : (
-            <div className="flex justify-between items-center font-bold">
-              <span className="text-green-300">Price:</span>
-              <span className="text-green-400 text-xl">${getOriginalPrice().toFixed(2)}</span>
-            </div>
-          )}
-        </div>
+        {/* Price Display */}
+        <PriceDisplay
+          originalPrice={getOriginalPrice()}
+          coupon={coupon}
+          discountedPrice={getDiscountedPrice()}
+        />
 
-        {/* --- Checkout Form --- */}
-        <form onSubmit={handlePay} className="w-full flex flex-col gap-4 mb-4">
-          <input
-            type="email"
-            placeholder="Your Email"
-            className="w-full px-4 py-2 rounded bg-[#22282c] border border-[#232a32] text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            autoComplete="email"
-            required
-          />
-          <input
-            type="text"
-            placeholder="Telegram Username (with @)"
-            className="w-full px-4 py-2 rounded bg-[#22282c] border border-[#232a32] text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-            value={telegram}
-            onChange={e => setTelegram(e.target.value)}
-            autoComplete="off"
-            required
-          />
-          {error && (
-            <div className="text-red-400 text-sm">{error}</div>
-          )}
-          <button
-            type="submit"
-            className="w-full bg-green-500 hover:bg-green-600 text-black font-bold rounded-lg px-4 py-2 mt-2 transition"
-            disabled={product.status !== "In Stock"}
-          >
-            Pay Now
-          </button>
-        </form>
+        {/* Purchase Form */}
+        <PurchaseForm
+          email={email}
+          setEmail={setEmail}
+          telegram={telegram}
+          setTelegram={setTelegram}
+          error={error}
+          handlePay={handlePay}
+          inStock={product.status === "In Stock"}
+        />
 
         <button
           onClick={() => navigate("/")}

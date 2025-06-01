@@ -37,7 +37,7 @@ router.post('/', (req, res) => {
     discountValue, // Number (eg. 5 or 10)
     maxUses: maxUses || null, // null = unlimited
     used: 0,
-    productIds: productIds || [], // [] = all products
+    productIds: (productIds || []).map(pid => Number(pid)), // Always store as numbers
   });
   writeCoupons(coupons);
   res.json({ success: true });
@@ -54,19 +54,33 @@ router.delete('/:id', (req, res) => {
 
 // Validate and apply coupon
 router.post('/validate', (req, res) => {
-  const { code, productId } = req.body;
+  let { code, productId } = req.body;
+  productId = Number(productId); // Ensure productId is a number for matching
+
   const coupons = readCoupons();
+
   const coupon = coupons.find(c =>
     c.code === code &&
     (!c.productIds.length || c.productIds.includes(productId))
   );
-  if (!coupon) return res.json({ ok: false, error: "Invalid coupon" });
-  if (coupon.maxUses && coupon.used >= coupon.maxUses)
-    return res.json({ ok: false, error: "Coupon expired" });
-  res.json({ ok: true, coupon });
+
+  if (!coupon) {
+    return res.json({ valid: false, error: "Invalid coupon" });
+  }
+  if (coupon.maxUses && coupon.used >= coupon.maxUses) {
+    return res.json({ valid: false, error: "Coupon expired" });
+  }
+  // Only send necessary coupon details
+  res.json({
+    valid: true,
+    discountType: coupon.discountType,
+    discountValue: coupon.discountValue,
+    code: coupon.code,
+    id: coupon.id
+  });
 });
 
-// (Optional) Mark coupon as used (call this after successful order)
+// Mark coupon as used (call this after successful order)
 router.post('/use', (req, res) => {
   const { code } = req.body;
   const coupons = readCoupons();
