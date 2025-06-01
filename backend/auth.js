@@ -88,4 +88,14 @@ router.get('/me', async (req, res) => {
   }
 });
 
+// === ADD THIS ROUTE for AdminPanel Users List ===
+router.get('/users', async (req, res) => {
+  try {
+    const users = await User.find().select("-password");
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch users." });
+  }
+});
+
 module.exports = router;

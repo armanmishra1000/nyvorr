@@ -1,12 +1,22 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import ProductFormPanel from "../components/admin/ProductFormPanel";
 import ProductListPanel from "../components/admin/ProductListPanel";
 import CouponPanel from "../components/admin/CouponPanel";
+import UserListPanel from "../components/admin/UserListPanel"; // ADD THIS LINE
+
+const SECTIONS = [
+  { key: "products", label: "Products" },
+  { key: "coupons", label: "Coupons" },
+  { key: "users", label: "Users" }, // ADD THIS LINE
+];
 
 function AdminPanel() {
-  const [products, setProducts] = useState([]);
-  const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({
+  const [activeSection, setActiveSection] = useState("products");
+
+  // Product state
+  const [products, setProducts] = React.useState([]);
+  const [editing, setEditing] = React.useState(null);
+  const [form, setForm] = React.useState({
     name: "",
     status: "In Stock",
     image: "",
@@ -14,14 +24,13 @@ function AdminPanel() {
     variations: [],
   });
 
-  // Fetch products from backend
-  useEffect(() => {
+  React.useEffect(() => {
     fetch("http://localhost:4000/api/products")
       .then(res => res.json())
       .then(setProducts);
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (editing) setForm(editing);
     else setForm({
       name: "",
@@ -32,7 +41,6 @@ function AdminPanel() {
     });
   }, [editing]);
 
-  // Add or update product
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.name || form.variations.length === 0) {
@@ -68,34 +76,69 @@ function AdminPanel() {
     });
   };
 
-  // Delete product
   const handleDelete = (id) => {
     fetch(`http://localhost:4000/api/products/${id}`, { method: "DELETE" })
       .then(() => setProducts(products.filter(p => p.id !== id)));
   };
 
-  // Edit button click
   const handleEdit = (product) => setEditing(product);
-
-  // Cancel editing
   const handleCancel = () => setEditing(null);
 
+  // --- Render Section Panels ---
+  function renderSection() {
+    if (activeSection === "products") {
+      return (
+        <>
+          <ProductFormPanel
+            form={form}
+            setForm={setForm}
+            onSubmit={handleSubmit}
+            editing={editing}
+            onCancel={handleCancel}
+          />
+          <ProductListPanel
+            products={products}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        </>
+      );
+    }
+    if (activeSection === "coupons") {
+      return <CouponPanel products={products} />;
+    }
+    if (activeSection === "users") {
+      return <UserListPanel />; // SHOW USERS PANEL
+    }
+    return null;
+  }
+
   return (
-    <div className="max-w-2xl mx-auto py-10">
-      <h1 className="text-2xl font-bold text-green-400 mb-6 text-center">Admin Panel</h1>
-      <ProductFormPanel
-        form={form}
-        setForm={setForm}
-        onSubmit={handleSubmit}
-        editing={editing}
-        onCancel={handleCancel}
-      />
-      <ProductListPanel
-        products={products}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-      />
-      <CouponPanel products={products} />
+    <div className="flex min-h-[80vh] w-full">
+      {/* Sidebar */}
+      <aside className="w-48 bg-[#171e21] border-r border-[#232a32] flex flex-col p-0 pt-10 min-h-screen">
+        <div className="text-center text-green-400 text-xl font-bold mb-8">Admin</div>
+        {SECTIONS.map(s => (
+          <button
+            key={s.key}
+            onClick={() => setActiveSection(s.key)}
+            className={`px-6 py-3 text-left w-full text-sm border-l-4 ${
+              activeSection === s.key
+                ? "bg-[#232a32] text-green-400 border-green-500 font-semibold"
+                : "hover:bg-[#20272a] text-gray-300 border-transparent"
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </aside>
+      {/* Main admin content */}
+      <main className="flex-1 px-6 py-10 max-w-3xl mx-auto">
+        <h1 className="text-2xl font-bold text-green-400 mb-6 text-center">
+          {SECTIONS.find(s => s.key === activeSection)?.label} Management
+        </h1>
+        <div>{renderSection()}</div>
+      </main>
     </div>
   );
 }
