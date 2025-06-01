@@ -1,3 +1,28 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* === Product Image Styles === */
+
+.product-img-square {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 0.5rem;
+  background: #22282c;
+  border: 1px solid #232a32;
+  display: block;
+}
+
+.product-img-big {
+  width: 320px;
+  height: 320px;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 1rem;
+  background: #20272a;
+  border: 1px solid #232a32;
+  display: block;
+  margin: 0 auto;
+}

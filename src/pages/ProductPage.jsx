@@ -168,7 +168,7 @@ function ProductPage() {
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
       <div className="bg-[#181e20] border border-[#22282c] rounded-2xl shadow-xl max-w-md w-full p-8 flex flex-col items-center">
         {/* Image */}
-        <ProductImage product={product} />
+        <ProductImage product={product} className="product-img-big" />
 
         {/* Title */}
         <h1 className="text-2xl font-bold mb-2 text-green-400 text-center">
