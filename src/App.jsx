@@ -1,6 +1,6 @@
 // src/App.jsx
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
 import Products from "./components/Products";
 import Reviews from "./components/Reviews";
 import News from "./components/News";
@@ -10,11 +10,13 @@ import ScrollToTop from "./components/ScrollToTop";
 import ProductPage from "./pages/ProductPage";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import AdminPanel from "./pages/AdminPanel";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import { useAuth } from "./contexts/AuthContext";
 
 function HomePage() {
   return (
     <>
-      {/* Announcement Section */}
       <section className="max-w-2xl mx-auto mt-8 bg-[#181e20] rounded-lg border border-[#22282c] shadow p-4 flex flex-col items-center transition duration-200 ease-out">
         <span className="text-lg font-semibold mb-1 text-green-400">Announcement</span>
         <p className="text-gray-200 text-center">
@@ -31,7 +33,16 @@ function HomePage() {
   );
 }
 
+// Protect admin panel
+function ProtectedRoute({ children }) {
+  const { user } = useAuth();
+  return user && user.isAdmin ? children : <Navigate to="/login" />;
+}
+
 function App() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen pt-[70px] bg-gradient-to-br from-[#151c1f] via-[#23272c] to-[#101314] text-white font-sans">
       {/* Sticky Header/Navbar */}
@@ -45,11 +56,39 @@ function App() {
           <a href="/" className="hover:text-green-400">Products</a>
           <a href="/" className="hover:text-green-400">Reviews</a>
           <a href="/" className="hover:text-green-400">Contact</a>
+          {user && user.isAdmin && (
+            <Link to="/admin" className="hover:text-yellow-400 font-bold">Admin</Link>
+          )}
         </nav>
-        <div>
-          <button className="bg-green-500 hover:bg-green-600 transition px-4 py-1.5 rounded font-semibold text-black text-sm shadow">
-            Sign Up
-          </button>
+        <div className="flex items-center gap-3">
+          {user ? (
+            <>
+              <span className="text-green-300 text-xs font-mono">
+                {user.username || user.email}
+              </span>
+              <button
+                className="bg-gray-700 hover:bg-red-500 px-3 py-1 rounded font-semibold text-white text-xs"
+                onClick={() => { logout(); navigate("/"); }}
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/signup"
+                className="bg-green-500 hover:bg-green-600 transition px-4 py-1.5 rounded font-semibold text-black text-sm shadow"
+              >
+                Sign Up
+              </Link>
+              <Link
+                to="/login"
+                className="ml-2 bg-gray-600 hover:bg-gray-700 transition px-4 py-1.5 rounded font-semibold text-white text-sm shadow"
+              >
+                Login
+              </Link>
+            </>
+          )}
         </div>
       </header>
 
@@ -57,7 +96,14 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/product/:id" element={<ProductPage />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
-        <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/admin" element={
+          <ProtectedRoute>
+            <AdminPanel />
+          </ProtectedRoute>
+        } />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </div>
   );

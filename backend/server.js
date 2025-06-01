@@ -4,6 +4,17 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
+const mongoose = require('mongoose'); // ADD THIS
+
+// ==== MongoDB connection (add this block) ====
+mongoose.connect(
+  'mongodb+srv://armanmishra1000:P54GpeNAuvxpIz4v@nyvorr.mdeoxdp.mongodb.net/nyvorr?retryWrites=true&w=majority&appName=Nyvorr',
+  { useNewUrlParser: true, useUnifiedTopology: true }
+)
+.then(() => console.log("MongoDB connected!"))
+.catch(err => console.error("MongoDB connection error:", err));
+// ==== END ====
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -33,6 +44,7 @@ app.use('/api', require('./order'));
 app.use('/api/products', require('./products'));
 app.use('/api/order', require('./order'));
 app.use('/api/coupons', require('./coupons'));
+app.use('/api/auth', require('./auth'));
 
 // Start server
 const PORT = 4000;
