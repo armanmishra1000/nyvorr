@@ -12,6 +12,7 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import AdminPanel from "./pages/AdminPanel";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import OrderHistory from "./pages/OrderHistory"; // ADD THIS LINE
 import { useAuth } from "./contexts/AuthContext";
 
 function HomePage() {
@@ -56,6 +57,9 @@ function App() {
           <a href="/" className="hover:text-green-400">Products</a>
           <a href="/" className="hover:text-green-400">Reviews</a>
           <a href="/" className="hover:text-green-400">Contact</a>
+          {user && (
+            <Link to="/order-history" className="hover:text-blue-400 font-bold">My Orders</Link>
+          )}
           {user && user.isAdmin && (
             <Link to="/admin" className="hover:text-yellow-400 font-bold">Admin</Link>
           )}
@@ -96,6 +100,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/product/:id" element={<ProductPage />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
+        <Route path="/order-history" element={<OrderHistory />} /> {/* ADD THIS ROUTE */}
         <Route path="/admin" element={
           <ProtectedRoute>
             <AdminPanel />

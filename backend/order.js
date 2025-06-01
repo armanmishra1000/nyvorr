@@ -3,12 +3,14 @@ const express = require('express');
 const axios = require('axios');
 const crypto = require('crypto');
 const Order = require('./models/Order');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 
 require('dotenv').config();
 
 const CRYPTOMUS_API_KEY = process.env.CRYPTOMUS_API_KEY;
 const CRYPTOMUS_MERCHANT_UUID = process.env.CRYPTOMUS_MERCHANT_UUID;
+const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 
 // -- Cryptomus sign
 function createSign(body, apiKey) {
@@ -96,13 +98,35 @@ router.get('/order-status/:order_id', async (req, res) => {
   }
 });
 
-// --- (Optional) List all orders (admin) ---
+// --- List all orders (admin) ---
 router.get('/orders', async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
     res.json(orders);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch orders." });
+  }
+});
+
+// --- "My Orders" endpoint for logged in users ---
+router.get('/my-orders', async (req, res) => {
+  const auth = req.headers.authorization;
+  if (!auth) return res.status(401).json({ error: "No token" });
+  try {
+    const decoded = jwt.verify(auth.split(" ")[1], JWT_SECRET);
+
+    // Use user ID from token to find email
+    let user;
+    if (decoded.id) {
+      const User = require('./models/User');
+      user = await User.findById(decoded.id);
+    }
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const orders = await Order.find({ email: user.email }).sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (err) {
+    res.status(401).json({ error: "Invalid token" });
   }
 });
 
