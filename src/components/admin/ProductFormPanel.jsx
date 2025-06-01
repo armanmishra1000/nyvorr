@@ -2,6 +2,21 @@ import React from "react";
 import VariationEditor from "../VariationEditor";
 
 function ProductFormPanel({ form, setForm, onSubmit, editing, onCancel }) {
+  // --- Image Upload Handler ---
+  const handleImageUpload = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const data = new FormData();
+    data.append("image", file);
+    const res = await fetch("http://localhost:4000/api/products/upload-image", {
+      method: "POST",
+      body: data
+    });
+    const result = await res.json();
+    if (result.path) setForm(f => ({ ...f, image: result.path }));
+    else alert("Upload failed");
+  };
+
   return (
     <form
       onSubmit={onSubmit}
@@ -15,13 +30,18 @@ function ProductFormPanel({ form, setForm, onSubmit, editing, onCancel }) {
         onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
         required
       />
-      <input
-        type="text"
-        placeholder="Image path (e.g. /images/netflix.png)"
-        className="px-3 py-2 rounded bg-[#22282c] border border-[#232a32] text-white"
-        value={form.image}
-        onChange={e => setForm(f => ({ ...f, image: e.target.value }))}
-      />
+      {/* IMAGE UPLOAD FIELD */}
+      <div className="flex items-center gap-3">
+        <input
+          type="file"
+          accept="image/*"
+          className="block text-xs"
+          onChange={handleImageUpload}
+        />
+        {form.image && (
+          <img src={form.image} alt="Product" className="w-16 h-16 rounded border border-[#232a32] object-contain" />
+        )}
+      </div>
       <select
         className="px-3 py-2 rounded bg-[#22282c] border border-[#232a32] text-white"
         value={form.status}

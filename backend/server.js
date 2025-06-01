@@ -8,6 +8,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Serve uploaded images
+app.use('/images', express.static(path.join(__dirname, '../public/images')));
+
 // ===== Orders Status Endpoint =====
 app.get('/api/order-status/:order_id', (req, res) => {
   const orderId = req.params.order_id;

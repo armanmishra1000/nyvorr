@@ -2,9 +2,29 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
 const router = express.Router();
 
 const PRODUCTS_FILE = path.join(__dirname, 'products.json');
+const IMAGES_DIR = path.join(__dirname, '../public/images');
+if (!fs.existsSync(IMAGES_DIR)) fs.mkdirSync(IMAGES_DIR, { recursive: true });
+
+// Multer setup for image upload
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, IMAGES_DIR),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, 'product-' + Date.now() + ext);
+  }
+});
+const upload = multer({ storage });
+
+// ==== IMAGE UPLOAD API ====
+// POST /api/products/upload-image
+router.post('/upload-image', upload.single('image'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  res.json({ path: `/images/${req.file.filename}` });
+});
 
 // --- Helpers: Safe read/write ---
 function readProducts() {
