@@ -48,8 +48,21 @@ router.post('/create-payment', async (req, res) => {
       }
     );
 
+    // Get user ID from auth token if available
+    let userId = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
+        userId = decoded.id;
+      } catch (err) {
+        console.log('Invalid token, proceeding without user ID');
+      }
+    }
+
     // Save order in MongoDB
-    await Order.create({
+    const orderData = {
       order_id,
       product_name,
       email,
@@ -57,7 +70,14 @@ router.post('/create-payment', async (req, res) => {
       amount,
       status: "Pending",
       payment_id: response.data.result.payment_id || "",
-    });
+    };
+
+    // Add user reference if available
+    if (userId) {
+      orderData.user = userId;
+    }
+
+    await Order.create(orderData);
 
     res.json({ pay_url: response.data.result.url });
   } catch (error) {
@@ -101,9 +121,30 @@ router.get('/order-status/:order_id', async (req, res) => {
 // --- List all orders (admin) ---
 router.get('/orders', async (req, res) => {
   try {
-    const orders = await Order.find().sort({ createdAt: -1 });
-    res.json(orders);
+    const orders = await Order.find()
+      .sort({ createdAt: -1 })
+      .populate('user', 'email name') // Populate user details
+      .lean();
+      
+    // Format the response to match the frontend expectations
+    const formattedOrders = orders.map(order => ({
+      _id: order._id,
+      orderNumber: order.order_id,
+      status: order.status,
+      total: order.amount,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      user: order.user ? {
+        email: order.user.email,
+        name: order.user.name
+      } : { email: order.email || 'N/A' },
+      // Include the original fields for backward compatibility
+      ...order
+    }));
+    
+    res.json(formattedOrders);
   } catch (err) {
+    console.error('Error fetching orders:', err);
     res.status(500).json({ error: "Failed to fetch orders." });
   }
 });

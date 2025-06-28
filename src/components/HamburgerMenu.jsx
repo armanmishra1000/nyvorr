@@ -113,7 +113,7 @@ const HamburgerMenu = () => {
             {user ? (
               <button
                 onClick={handleLogout}
-                className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-[#2d3748] hover:text-red-300"
+                className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-[#2d3748] hover:text-red-300 active:bg-[#3a4552] transition-colors"
               >
                 Sign out
               </button>
@@ -121,14 +121,14 @@ const HamburgerMenu = () => {
               <>
                 <Link
                   to="/login"
-                  className="block px-4 py-2 text-sm text-gray-300 hover:bg-[#2d3748] hover:text-white"
+                  className="block px-4 py-3 text-sm text-gray-300 hover:bg-[#2d3748] hover:text-white active:bg-[#3a4552] transition-colors"
                   onClick={() => setIsOpen(false)}
                 >
                   Sign in
                 </Link>
                 <Link
                   to="/signup"
-                  className="block px-4 py-2 text-sm text-green-400 hover:bg-[#2d3748] hover:text-green-300"
+                  className="block px-4 py-3 text-sm text-green-400 hover:bg-[#2d3748] hover:text-green-300 active:bg-[#2a3a3a] transition-colors"
                   onClick={() => setIsOpen(false)}
                 >
                   Create account

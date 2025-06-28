@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-const mongoose = require('mongoose'); // ADD THIS
+const mongoose = require('mongoose'); 
 
 // ==== MongoDB connection (add this block) ====
 mongoose.connect(
@@ -43,13 +43,19 @@ app.get('/api/order-status/:order_id', (req, res) => {
   }
 });
 
-// ====== (Your old routes; don't remove) ======
-app.use('/api', require('./products'));
-app.use('/api', require('./order'));
-app.use('/api/products', require('./products'));
-app.use('/api/order', require('./order'));
-app.use('/api/coupons', require('./coupons'));
-app.use('/api/auth', require('./auth'));
+// Import routes
+const products = require('./products');
+const order = require('./order');
+const auth = require('./auth');
+const coupons = require('./coupons');
+const admin = require('./admin');
+
+// Use routes
+app.use('/api/products', products);
+app.use('/api/order', order);
+app.use('/api/auth', auth);
+app.use('/api/coupons', coupons);
+app.use('/api/admin', admin);
 
 // Start server
 const PORT = 4000;

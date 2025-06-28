@@ -3,17 +3,19 @@ import ProductFormPanel from "../components/admin/ProductFormPanel";
 import ProductListPanel from "../components/admin/ProductListPanel";
 import CouponPanel from "../components/admin/CouponPanel";
 import UserListPanel from "../components/admin/UserListPanel";
-import OrderListPanel from "../components/admin/OrderListPanel"; // <-- NEW
+import OrderListPanel from "../components/admin/OrderListPanel";
+import Dashboard from "../components/admin/Dashboard";
 
 const SECTIONS = [
-  { key: "products", label: "Products" },
-  { key: "coupons", label: "Coupons" },
-  { key: "orders", label: "Orders" },      // <-- NEW
-  { key: "users", label: "Users" }
+  { key: "dashboard", label: "Dashboard", icon: "📊" },
+  { key: "products", label: "Products", icon: "📦" },
+  { key: "coupons", label: "Coupons", icon: "🎟️" },
+  { key: "orders", label: "Orders", icon: "📝" },
+  { key: "users", label: "Users", icon: "👥" }
 ];
 
 function AdminPanel() {
-  const [activeSection, setActiveSection] = useState("products");
+  const [activeSection, setActiveSection] = useState("dashboard");
 
   // Product state
   const [products, setProducts] = React.useState([]);
@@ -87,6 +89,9 @@ function AdminPanel() {
   const handleCancel = () => setEditing(null);
 
   function renderSection() {
+    if (activeSection === "dashboard") {
+      return <Dashboard />;
+    }
     if (activeSection === "products") {
       return (
         <>
@@ -120,21 +125,27 @@ function AdminPanel() {
   return (
     <div className="flex min-h-[80vh] w-full">
       {/* Sidebar */}
-      <aside className="w-48 bg-[#171e21] border-r border-[#232a32] flex flex-col p-0 pt-10 min-h-screen">
-        <div className="text-center text-green-400 text-xl font-bold mb-8">Admin</div>
-        {SECTIONS.map(s => (
-          <button
-            key={s.key}
-            onClick={() => setActiveSection(s.key)}
-            className={`px-6 py-3 text-left w-full text-sm border-l-4 ${
-              activeSection === s.key
-                ? "bg-[#232a32] text-green-400 border-green-500 font-semibold"
-                : "hover:bg-[#20272a] text-gray-300 border-transparent"
-            }`}
-          >
-            {s.label}
-          </button>
-        ))}
+      <aside className="w-56 bg-[#171e21] border-r border-[#232a32] flex flex-col p-0 min-h-screen">
+        <div className="p-6 border-b border-[#232a32]">
+          <h2 className="text-xl font-bold text-green-400">Admin Panel</h2>
+          <p className="text-xs text-gray-400">Welcome back, Admin</p>
+        </div>
+        <nav className="flex-1 overflow-y-auto py-4">
+          {SECTIONS.map(s => (
+            <button
+              key={s.key}
+              onClick={() => setActiveSection(s.key)}
+              className={`flex items-center px-6 py-3 w-full text-sm transition-colors ${
+                activeSection === s.key
+                  ? "bg-[#232a32] text-green-400 border-r-4 border-green-500 font-medium"
+                  : "text-gray-300 hover:bg-[#20272a]"
+              }`}
+            >
+              <span className="mr-3 text-lg">{s.icon}</span>
+              {s.label}
+            </button>
+          ))}
+        </nav>
       </aside>
       <main className="flex-1 px-6 py-10 max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold text-green-400 mb-6 text-center">
