@@ -24,8 +24,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve uploaded images
-app.use('/images', express.static(path.join(__dirname, '../public/images')));
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, '../public')));
 
 // ===== Orders Status Endpoint =====
 app.get('/api/order-status/:order_id', (req, res) => {

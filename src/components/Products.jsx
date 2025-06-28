@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getResponsiveImage, getProductImageSrc } from "../utils/imageUtils";
 
 function Products() {
   const navigate = useNavigate();
@@ -37,12 +38,21 @@ function Products() {
             className="bg-[#181e20] border border-[#22282c] rounded-xl shadow-md p-4 flex flex-col items-center transition hover:scale-[1.03] hover:border-green-400"
           >
             <div className="w-full h-40 mb-4 rounded-md overflow-hidden border border-[#232a32] bg-[#20272a] shadow-sm flex items-center justify-center">
-              <img
-                src={product.image}
-                alt={product.name}
-                className="w-full h-full object-cover"
-                draggable={false}
-              />
+              {(() => {
+                const { src, srcSet, sizes } = getResponsiveImage(getProductImageSrc(product));
+                return (
+                  <img
+                    src={src}
+                    srcSet={srcSet}
+                    sizes={sizes}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                    draggable={false}
+                    loading="lazy"
+                    onError={e => { e.target.src = "/images/no-image.png"; }}
+                  />
+                );
+              })()}
             </div>
             <h3 className="font-semibold text-base sm:text-lg mb-1 text-center">{product.name}</h3>
             <div className="flex items-center justify-between w-full mb-2">

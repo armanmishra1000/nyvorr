@@ -1,20 +1,33 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { getResponsiveImage, getProductImageSrc } from "../../utils/imageUtils";
 
 // Allows custom className for max flexibility
 function ProductImage({ product, className }) {
-  let imgSrc = "/images/no-image.png";
-  if (product?.image) {
-    if (product.image.startsWith("/images/")) {
-      imgSrc = product.image;
-    } else if (product.image.startsWith("images/")) {
-      imgSrc = "/" + product.image;
-    } else if (
-      product.image.startsWith("http://") ||
-      product.image.startsWith("https://")
-    ) {
-      imgSrc = product.image;
+  const [imageSrc, setImageSrc] = useState('/images/no-image.png');
+  const [imageSrcSet, setImageSrcSet] = useState('');
+  const [imageSizes, setImageSizes] = useState('');
+
+  useEffect(() => {
+    if (product) {
+      console.log('Product image data:', product.image);
+      const imgSrc = getProductImageSrc(product);
+      console.log('Processed image source:', imgSrc);
+      const { src, srcSet, sizes } = getResponsiveImage(imgSrc);
+      console.log('Final image properties:', { src, srcSet, sizes });
+      
+      setImageSrc(src);
+      setImageSrcSet(srcSet);
+      setImageSizes(sizes);
+      
+      // Preload the image to check if it exists
+      const img = new Image();
+      img.onload = () => console.log('Image loaded successfully:', src);
+      img.onerror = () => console.error('Failed to load image:', src);
+      img.src = src;
+    } else {
+      console.log('No product provided, using fallback image');
     }
-  }
+  }, [product]);
   return (
     <div
       className={
@@ -25,12 +38,22 @@ function ProductImage({ product, className }) {
       style={{ borderRadius: '20px' }}
     >
       <img
-        src={imgSrc}
+        src={imageSrc}
+        srcSet={imageSrcSet || undefined}
+        sizes={imageSizes || undefined}
         alt={product?.name || "Product"}
         className="w-full h-full object-cover scale-105"
         style={{ borderRadius: '20px' }}
         draggable={false}
-        onError={e => { e.target.src = "/images/no-image.png"; }}
+        loading="lazy"
+        onError={e => { 
+          console.error('Error loading image:', imageSrc, 'Error event:', e);
+          if (e.target.src !== '/images/no-image.png') {
+            console.log('Falling back to no-image.png');
+            e.target.src = '/images/no-image.png';
+            e.target.srcset = '';
+          }
+        }}
       />
     </div>
   );
