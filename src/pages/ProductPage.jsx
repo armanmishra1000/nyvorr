@@ -5,6 +5,7 @@ import ProductVariationSelector from "../components/product/ProductVariationSele
 import CouponApplyForm from "../components/product/CouponApplyForm";
 import PriceDisplay from "../components/product/PriceDisplay";
 import PurchaseForm from "../components/product/PurchaseForm";
+import ProductSkeleton from "../components/ui/Skeleton";
 
 function ProductPage() {
   const { id } = useParams();
@@ -144,25 +145,26 @@ function ProductPage() {
   };
 
   // --- UI LOADING/ERROR STATES ---
-  if (loading)
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <span className="text-green-400">Loading product...</span>
-      </div>
-    );
+  if (loading) {
+    return <ProductSkeleton />;
+  }
 
-  if (!product)
+  if (!product) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <h1 className="text-2xl font-bold mb-4 text-red-400">Product Not Found</h1>
-        <button
-          className="bg-green-500 hover:bg-green-600 text-black px-6 py-2 rounded-lg font-semibold transition"
-          onClick={() => navigate("/")}
-        >
-          Back to Home
-        </button>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-200 mb-2">Product Not Found</h2>
+          <p className="text-gray-400 mb-6">The product you're looking for doesn't exist or has been removed.</p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+          >
+            Back to Home
+          </button>
+        </div>
       </div>
     );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 py-8">
