@@ -2,14 +2,19 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const mongoose = require('mongoose'); // ADD THIS
 
 // ==== MongoDB connection (add this block) ====
 mongoose.connect(
-  'mongodb+srv://armanmishra1000:P54GpeNAuvxpIz4v@nyvorr.mdeoxdp.mongodb.net/nyvorr?retryWrites=true&w=majority&appName=Nyvorr',
-  { useNewUrlParser: true, useUnifiedTopology: true }
+  process.env.MONGODB_URI,
+  { 
+    useNewUrlParser: true, 
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000
+  }
 )
 .then(() => console.log("MongoDB connected!"))
 .catch(err => console.error("MongoDB connection error:", err));

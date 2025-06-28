@@ -12,8 +12,8 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import AdminPanel from "./pages/AdminPanel";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import OrderHistory from "./pages/OrderHistory"; // Already present
-import Profile from "./pages/Profile"; // <-- ADD THIS LINE
+import OrderHistory from "./pages/OrderHistory";
+import Profile from "./pages/Profile";
 import { useAuth } from "./contexts/AuthContext";
 
 function HomePage() {
@@ -105,7 +105,7 @@ function App() {
         <Route path="/product/:id" element={<ProductPage />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/order-history" element={<OrderHistory />} />
-        <Route path="/profile" element={<Profile />} /> {/* Profile Route */}
+        <Route path="/profile" element={<Profile />} />
         <Route path="/admin" element={
           <ProtectedRoute>
             <AdminPanel />

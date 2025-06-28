@@ -165,10 +165,10 @@ function ProductPage() {
     );
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
-      <div className="bg-[#181e20] border border-[#22282c] rounded-2xl shadow-xl max-w-md w-full p-8 flex flex-col items-center">
+    <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 py-8">
+      <div className="bg-[#181e20] border border-[#22282c] rounded-2xl shadow-xl max-w-2xl w-full p-8 flex flex-col items-center">
         {/* Image */}
-        <ProductImage product={product} className="product-img-big" />
+        <ProductImage product={product} className="w-full max-w-xl h-auto mb-6" />
 
         {/* Title */}
         <h1 className="text-2xl font-bold mb-2 text-green-400 text-center">

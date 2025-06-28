@@ -24,11 +24,9 @@ lerna-debug.log*
 *.sw?
 
 # === Environment & credentials ===
-.env
-*.env
-*.env.*
 google-credentials.json
 products.json
+.env
 
 # === Misc ===
 coverage/
