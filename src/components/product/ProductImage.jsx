@@ -20,13 +20,15 @@ function ProductImage({ product, className }) {
       className={
         className
           ? className // use parent className if provided (for big or grid)
-          : "w-full h-40 mb-4 rounded-lg overflow-hidden border border-[#232a32] bg-[#20272a] shadow-sm flex items-center justify-center"
+          : "w-full h-40 mb-4 overflow-hidden border border-[#232a32] bg-[#20272a] shadow-[0_4px_20px_rgba(0,0,0,0.15)] flex items-center justify-center transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.2)]"
       }
+      style={{ borderRadius: '20px' }}
     >
       <img
         src={imgSrc}
         alt={product?.name || "Product"}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-cover scale-105"
+        style={{ borderRadius: '20px' }}
         draggable={false}
         onError={e => { e.target.src = "/images/no-image.png"; }}
       />
