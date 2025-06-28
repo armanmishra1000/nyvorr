@@ -1,6 +1,6 @@
 // src/App.jsx
-import React from "react";
-import { Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Routes, Route, Navigate, Link, useNavigate, useLocation } from "react-router-dom";
 import Products from "./components/Products";
 import Reviews from "./components/Reviews";
 import News from "./components/News";
@@ -15,6 +15,7 @@ import Signup from "./pages/Signup";
 import OrderHistory from "./pages/OrderHistory";
 import Profile from "./pages/Profile";
 import { useAuth } from "./contexts/AuthContext";
+import HamburgerMenu from "./components/HamburgerMenu";
 
 function HomePage() {
   return (
@@ -35,6 +36,25 @@ function HomePage() {
   );
 }
 
+// Custom NavLink component for active state
+const NavLink = ({ to, activeClassName, children, ...props }) => {
+  const location = useLocation();
+  const isActive = location.pathname === to || 
+                  (to !== '/' && location.pathname.startsWith(to));
+  
+  return (
+    <Link
+      to={to}
+      className={`text-gray-300 hover:text-green-400 px-3 py-2 text-sm font-medium ${
+        isActive ? activeClassName : ''
+      }`}
+      {...props}
+    >
+      {children}
+    </Link>
+  );
+};
+
 // Protect admin panel
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -44,77 +64,97 @@ function ProtectedRoute({ children }) {
 function App() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Handle scroll effect for header
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    const mobileMenu = document.getElementById('mobile-menu');
+    if (mobileMenu && mobileMenu.classList.contains('hidden')) {
+      mobileMenu.classList.add('hidden');
+    }
+  }, [location]);
 
   return (
-    <div className="min-h-screen pt-[70px] bg-gradient-to-br from-[#151c1f] via-[#23272c] to-[#101314] text-white font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-[#151c1f] via-[#23272c] to-[#101314] text-white font-sans">
       {/* Sticky Header/Navbar */}
-      <header className="w-full fixed top-0 left-0 z-50 bg-[#161b1d]/80 border-b border-[#22282c] px-4 py-3 flex items-center justify-between shadow-md backdrop-blur-md">
-        <div className="flex items-center space-x-3">
-          <span className="bg-gradient-to-br from-green-400 to-green-600 w-8 h-8 rounded-md flex items-center justify-center font-bold text-xl">N</span>
-          <span className="text-lg font-semibold tracking-wide text-white">Nyvorr Shop</span>
-        </div>
-        <nav className="hidden md:flex space-x-8 text-sm">
-          <a href="/" className="hover:text-green-400">Home</a>
-          <a href="/" className="hover:text-green-400">Products</a>
-          <a href="/" className="hover:text-green-400">Reviews</a>
-          <a href="/" className="hover:text-green-400">Contact</a>
-          {user && (
-            <Link to="/order-history" className="hover:text-blue-400 font-bold">My Orders</Link>
-          )}
-          {user && (
-            <Link to="/profile" className="hover:text-green-400 font-bold">Profile</Link>
-          )}
-          {user && user.isAdmin && (
-            <Link to="/admin" className="hover:text-yellow-400 font-bold">Admin</Link>
-          )}
-        </nav>
-        <div className="flex items-center gap-3">
-          {user ? (
-            <>
-              <span className="text-green-300 text-xs font-mono">
-                {user.username || user.email}
-              </span>
-              <button
-                className="bg-gray-700 hover:bg-red-500 px-3 py-1 rounded font-semibold text-white text-xs"
-                onClick={() => { logout(); navigate("/"); }}
-              >
-                Logout
-              </button>
-            </>
-          ) : (
-            <>
-              <Link
-                to="/signup"
-                className="bg-green-500 hover:bg-green-600 transition px-4 py-1.5 rounded font-semibold text-black text-sm shadow"
-              >
-                Sign Up
+      <header 
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isScrolled 
+            ? 'bg-[#161b1d] border-b border-[#22282c] py-2 shadow-lg' 
+            : 'bg-[#161b1d]/90 border-b border-[#22282c]/30 py-3 backdrop-blur-md'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex-shrink-0 flex items-center">
+              <Link to="/" className="flex items-center space-x-3">
+                <span className="bg-gradient-to-br from-green-400 to-green-600 w-8 h-8 rounded-md flex items-center justify-center font-bold text-xl">N</span>
+                <span className="text-lg font-semibold tracking-wide text-white hidden sm:inline-block">Nyvorr Shop</span>
               </Link>
-              <Link
-                to="/login"
-                className="ml-2 bg-gray-600 hover:bg-gray-700 transition px-4 py-1.5 rounded font-semibold text-white text-sm shadow"
-              >
-                Login
-              </Link>
-            </>
-          )}
+            </div>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center space-x-8">
+              <NavLink to="/" activeClassName="text-green-400">Home</NavLink>
+              <NavLink to="/#products" activeClassName="text-green-400">Products</NavLink>
+              <NavLink to="/#reviews" activeClassName="text-green-400">Reviews</NavLink>
+              <NavLink to="/#contact" activeClassName="text-green-400">Contact</NavLink>
+              
+              {user && (
+                <NavLink to="/order-history" activeClassName="text-blue-400">My Orders</NavLink>
+              )}
+              {user?.isAdmin && (
+                <NavLink to="/admin" activeClassName="text-yellow-400">Admin</NavLink>
+              )}
+            </nav>
+
+            {/* Mobile menu button */}
+            <div className="flex items-center space-x-4">
+              {user && (
+                <div className="hidden md:block">
+                  <Link 
+                    to="/profile" 
+                    className="text-green-300 hover:text-green-400 text-sm font-medium"
+                  >
+                    {user.username || user.email.split('@')[0]}
+                  </Link>
+                </div>
+              )}
+              <HamburgerMenu />
+            </div>
+          </div>
         </div>
       </header>
 
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/product/:id" element={<ProductPage />} />
-        <Route path="/payment-success" element={<PaymentSuccess />} />
-        <Route path="/order-history" element={<OrderHistory />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/admin" element={
-          <ProtectedRoute>
-            <AdminPanel />
-          </ProtectedRoute>
-        } />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+      {/* Add padding to account for fixed header */}
+      <div className="pt-20">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/product/:id" element={<ProductPage />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/order-history" element={<OrderHistory />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/admin" element={
+            <ProtectedRoute>
+              <AdminPanel />
+            </ProtectedRoute>
+          } />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </div>
     </div>
   );
 }
